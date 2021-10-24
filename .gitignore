@@ -129,4 +129,5 @@ dmypy.json
 .pyre/
 
 discord_bot/local_settings.py
+discord_bot/cookies.txt
 .idea/

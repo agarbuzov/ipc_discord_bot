@@ -61,11 +61,7 @@ class MusicPlayer(commands.Cog):
 
         return result
 
-    # @commands.command()
-    # async def skip/stop(self, ctx:commands.Context):
-    #     pass
-
-    @commands.command(name="stop")
+    @commands.command(name="stop", aliases=['skip'])
     async def _stop(self, ctx: commands.Context):
         """
         Stop current track
