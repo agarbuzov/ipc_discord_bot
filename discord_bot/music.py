@@ -8,11 +8,14 @@ import youtube_dl
 
 import settings
 
-
+# TODO fix One queue for all servers
+# TODO add move to if guild.id=guild.id
 class MusicPlayer(commands.Cog):
 
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
         self.ytdl = youtube_dl.YoutubeDL(settings.YTDL_OPTIONS)
+        self.players = {}
 
     @commands.command(name="play")
     async def _play(self, ctx: commands.Context, *, query: str):
@@ -25,14 +28,7 @@ class MusicPlayer(commands.Cog):
 
         voice_client = ctx.guild.voice_client
 
-        if voice_client:
-
-            if voice_client.is_playing():
-                """add track to queue"""
-                await ctx.channel.send(f'{settings.prefix_emoji} **Bot already playing. Queue not ready now**')
-                return
-
-        else:
+        if not voice_client:
             author_voice_state = ctx.author.voice
 
             if not author_voice_state:
@@ -45,7 +41,15 @@ class MusicPlayer(commands.Cog):
 
         await self.send_embed(ctx, query, result['title'])
 
-        voice_client.play(discord.FFmpegPCMAudio(result['url'], **settings.FFMPEG_OPTIONS))
+        player = self.players.get(ctx.guild.id)
+
+        if not player:
+            player = Player(self.bot)
+            self.players[ctx.guild.id] = player
+
+        player.voice = voice_client
+        source = discord.FFmpegPCMAudio(result['url'], **settings.FFMPEG_OPTIONS)
+        await player.queue.put(source)
 
     async def search(self, query):
         loop = asyncio.get_event_loop()
@@ -61,10 +65,10 @@ class MusicPlayer(commands.Cog):
 
         return result
 
-    @commands.command(name="stop", aliases=['skip'])
-    async def _stop(self, ctx: commands.Context):
+    @commands.command(name="next", aliases=['skip'])
+    async def _next(self, ctx: commands.Context):
         """
-        Stop current track
+        Skip current track in queue
         """
         voice_client = ctx.guild.voice_client
 
@@ -73,11 +77,11 @@ class MusicPlayer(commands.Cog):
             return
 
         if not (voice_client.is_paused() or voice_client.is_playing()):
-            await ctx.send(f'{settings.prefix_emoji} **Nothing to stop**')
+            await ctx.send(f'{settings.prefix_emoji} **Nothing to skip**')
             return
 
         voice_client.stop()
-        await ctx.send(f':stop_button: **Stopped**')
+        await ctx.send(f':next_track: **Skipped**')
 
     @commands.command(name="pause")
     async def _pause(self, ctx: commands.Context):
@@ -115,11 +119,11 @@ class MusicPlayer(commands.Cog):
         voice_client.resume()
         await ctx.send(f':play_pause: **Resumed**')
 
-    @commands.command(name="next")
-    async def _next(self, ctx: commands.Context):
+    @commands.command(name="stop")
+    async def _stop(self, ctx: commands.Context):
         """
-        Next track in queue
-        If queue is empty -> ctx.send_message 'Queue is empty'
+        Clean queue
+        Stop playing
         """
         pass
 
@@ -143,3 +147,35 @@ class MusicPlayer(commands.Cog):
         """
         await ctx.send(message)
 
+    # @commands.command(name='queue')
+    # async def _queue(self, ctx: commands.Context):
+    #     player = self.players.get(ctx.guild.id)
+    #     await ctx.send(player.queue)
+
+
+class Player:
+
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+        self.current = None
+        self.voice = None
+        self.queue = asyncio.Queue()
+        self.next = asyncio.Event()
+        self.main_loop = self.bot.loop.create_task(self.player_loop())
+
+    def __del__(self):
+        self.main_loop.cancel()
+
+    async def player_loop(self):
+        while True:
+
+            self.next.clear()
+
+            self.current = await self.queue.get()
+
+            self.voice.play(self.current, after=self.next_song)
+
+            await self.next.wait()
+
+    def next_song(self, error=None):
+        self.next.set()
