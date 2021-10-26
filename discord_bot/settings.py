@@ -3,8 +3,6 @@ FFMPEG_OPTIONS = {
     'options': '-vn',
 }
 
-prefix_emoji = '<:youtube:901491173133254657>'
-
 bot_token = ''
 yt_username = ''
 yt_password = ''
