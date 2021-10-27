@@ -4,6 +4,8 @@ FFMPEG_OPTIONS = {
 }
 
 bot_token = ''
+telegram_token = ''
+chat_id = ''
 yt_username = ''
 yt_password = ''
 yt_cookie_path = ''

@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 
 from music import MusicPlayer
+from notification import Notification
 
 bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 
@@ -14,4 +15,5 @@ async def on_ready():
 
 if __name__ == '__main__':
     bot.add_cog(MusicPlayer(bot))
+    bot.add_cog(Notification())
     bot.run(settings.bot_token)
