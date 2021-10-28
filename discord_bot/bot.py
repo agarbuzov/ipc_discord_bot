@@ -13,6 +13,14 @@ bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 async def on_ready():
     print(f'Bot {bot.user} is online')
 
+
+@bot.command(name="send")
+async def _send(ctx: commands.Context, *, query: str):
+    """
+    Send query by bot
+    """
+    await ctx.send(query)
+
 if __name__ == '__main__':
     bot.add_cog(MusicPlayer(bot))
     bot.add_cog(Notification())

@@ -57,27 +57,12 @@ class MusicPlayer(commands.Cog):
         player = self.players.get(ctx.guild.id)
 
         if not player:
-            player = Player(self.bot)
+            player = Player(ctx, self.bot)
             self.players[ctx.guild.id] = player
 
         player.voice = voice_client
-        source = discord.FFmpegPCMAudio(result['url'], **settings.FFMPEG_OPTIONS)
-        source.title = result['title']
-        await player.queue.put(source)
-
-    async def search(self, query):
-        loop = asyncio.get_event_loop()
-        partial = functools.partial(self.ytdl.extract_info, query, download=False)
-        search_data = await loop.run_in_executor(None, partial)
-
-        if 'entries' not in search_data:
-            result = search_data
-        else:
-            result = search_data['entries'].pop(0)
-
-        print(result)
-
-        return result
+        track = Track(result['url'], result['title'])
+        await player.queue.put(track)
 
     @commands.command(name="pause", aliases=['p'])
     async def _pause(self, ctx: commands.Context):
@@ -111,6 +96,36 @@ class MusicPlayer(commands.Cog):
         voice_client.resume()
         await ctx.send(f'{emoji.pause_button} **Resumed**')
 
+    @commands.command(name="stop", aliases=['s'])
+    async def _stop(self, ctx: commands.Context):
+        """
+        Clear queue and stop playing
+        """
+        player = self.players.get(ctx.guild.id)
+
+        if player.queue > 0:
+            player.queue.clear()
+
+        player.voice.stop()
+        await ctx.send(f'{emoji.stop_button} **Stopped**')
+
+    @commands.command(name='queue', aliases=['q', 'que'])
+    async def _queue(self, ctx: commands.Context):
+        """
+        Get list of track in queue
+        """
+        player = self.players.get(ctx.guild.id)
+        corrector = inflect.engine()
+        queue = ''
+
+        for i, track in enumerate(player.queue):
+            queue += f'{i+1}.{track.title}\n'
+
+        embed = discord.Embed(title=f'{emoji.notes} {len(player.queue)}'
+                                    f' {corrector.plural("track", len(player.queue))} in queue',
+                              description=f'{queue}')
+        await ctx.send(embed=embed)
+
     @commands.command(name="next", aliases=['skip', 'nx', 'sk'])
     async def _next(self, ctx: commands.Context):
         """
@@ -141,23 +156,6 @@ class MusicPlayer(commands.Cog):
 
         await ctx.send(f'{emoji.play_pause} `{player.current.title}` **is playing now**')
 
-    @commands.command(name='queue', aliases=['q', 'que'])
-    async def _queue(self, ctx: commands.Context):
-        """
-        Get list of track in queue
-        """
-        player = self.players.get(ctx.guild.id)
-        corrector = inflect.engine()
-        queue = ''
-
-        for i, track in enumerate(player.queue):
-            queue += f'{i+1}.{track.title}\n'
-
-        embed = discord.Embed(title=f'{emoji.notes} {len(player.queue)}'
-                                    f' {corrector.plural("track", len(player.queue))} in queue',
-                              description=f'{queue}')
-        await ctx.send(embed=embed)
-
     @commands.command(name='remove', aliases=['rm'])
     async def _remove(self, ctx: commands.Context, index: int):
         """
@@ -185,7 +183,7 @@ class MusicPlayer(commands.Cog):
 
         await ctx.send(f'{emoji.success} **Queue has been cleared**')
 
-    @commands.command(name="loop", aliases=['l'])
+    @commands.command(name="loop", aliases=['l', 'repeat', 'rp'])
     async def _loop(self, ctx: commands.Context):
         """
         Loop current track
@@ -198,30 +196,33 @@ class MusicPlayer(commands.Cog):
         player.loop = not player.loop
 
         if player.loop:
-            await ctx.send(f'{emoji.success} **Track is looped**')
+            await ctx.send(f'{emoji.success} **Track is set to repeat**')
         else:
-            await ctx.send(f'{emoji.success} **Looping removed**')
+            await ctx.send(f'{emoji.success} **Repetition removed**')
 
-    @commands.command(name="stop", aliases=['s'])
-    async def _stop(self, ctx: commands.Context):
-        """
-        Clear queue and stop playing
-        """
-        player = self.players.get(ctx.guild.id)
+    async def search(self, query):
+        loop = asyncio.get_event_loop()
+        partial = functools.partial(self.ytdl.extract_info, query, download=False)
+        search_data = await loop.run_in_executor(None, partial)
 
-        if player.queue > 0:
-            player.queue.clear()
+        if 'entries' not in search_data:
+            result = search_data
+        else:
+            result = search_data['entries'].pop(0)
 
-        player.voice.stop()
-        await ctx.send(f'{emoji.stop_button} **Stopped**')
+        return result
 
-    @commands.command(name="send")
-    async def _send(self, ctx: commands.Context, *, query: str):
-        """
-        Send query by bot
-        """
-        print(query)
-        await ctx.send(query)
+    @staticmethod
+    async def send_embed(ctx: commands.Context, query: str, result: dict, voice):
+        if voice.is_playing():
+            message = f"""
+            {emoji.youtube_icon} **Searching** {emoji.magnifier} `{query}`\n**Added to the queue** {emoji.notes} `{result}`
+            """
+        else:
+            message = f"""
+            {emoji.youtube_icon} **Searching** {emoji.magnifier} `{query}`\n**Playing** {emoji.notes} `{result}`
+            """
+        await ctx.send(message)
 
     @commands.command(name="create")
     async def _create(self, ctx: commands.Context, name: str):
@@ -239,23 +240,13 @@ class MusicPlayer(commands.Cog):
         }
         Playlist.add_track(ctx.guild.id, playlist, data)
 
-    @staticmethod
-    async def send_embed(ctx: commands.Context, query: str, result: dict, voice):
-        if voice.is_playing():
-            message = f"""
-            {emoji.youtube_icon} **Searching** {emoji.magnifier} `{query}`\n**Added to the queue** {emoji.notes} `{result}`
-            """
-        else:
-            message = f"""
-            {emoji.youtube_icon} **Searching** {emoji.magnifier} `{query}`\n**Playing** {emoji.notes} `{result}`
-            """
-        await ctx.send(message)
-
 
 class Player:
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, ctx: commands.Context, bot: commands.Bot):
         self.bot = bot
+        self.ctx = ctx
+        self.guild_id = ctx.guild.id
         self.current = None
         self.voice = None
         self.queue = TrackQueue()
@@ -277,10 +268,11 @@ class Player:
                     async with timeout(180):
                         self.current = await self.queue.get()
                 except asyncio.TimeoutError:
+                    # Dont disconnect from channel when use loop, why ???
                     self.bot.loop.create_task(self.stop())
                     return
 
-            self.voice.play(self.current, after=self.next_song)
+            self.voice.play(await self.current.create_source(), after=self.next_song)
 
             await self.next.wait()
 
@@ -293,6 +285,18 @@ class Player:
         if self.voice:
             await self.voice.disconnect()
             self.voice = None
+
+        del self.ctx.cog.players[self.guild_id]
+
+
+class Track:
+
+    def __init__(self, url, title):
+        self.url = url
+        self.title = title
+
+    async def create_source(self):
+        return discord.FFmpegPCMAudio(self.url, **settings.FFMPEG_OPTIONS)
 
 
 class TrackQueue(asyncio.Queue):
@@ -316,7 +320,7 @@ class TrackQueue(asyncio.Queue):
 class Playlist:
 
     @staticmethod
-    def create(guild_id: str, name: str):
+    def create(guild_id: int, name: str):
         with open(f'{guild_id}_{name}.json') as file:
             json.dump([], file, indent=4)
 
@@ -329,3 +333,13 @@ class Playlist:
 
         with open(f'{guild_id}_{name}.json', 'w') as file:
             json.dump(data, file, indent=4)
+
+    # @staticmethod
+    # def playlist(guild_id: int, name: str):
+    #     with open(f'{guild_id}_{name}.json', 'r') as file:
+    #         data = json.load(file)
+    #     for track in data:
+            # Create player if not exists and fill queue
+            # Or add tracks to already exists queue
+            # past to queue FFmpegPCMAudio objects
+
