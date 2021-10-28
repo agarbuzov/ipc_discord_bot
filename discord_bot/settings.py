@@ -33,3 +33,10 @@ YTDL_OPTIONS = {
     'password': yt_password,
     'cookiefile': yt_cookie_path
 }
+
+telegram_nick = {
+    '<@!291599775936282624>': '@agarbuzov ',
+    '<@!299154812858269697>': '@Tema_N7',
+    '<@!289480655551856641>': '@Gelbart',
+    '<@!170224964429938689>': '@w4ri0ck',
+}

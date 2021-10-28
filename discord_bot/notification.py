@@ -1,4 +1,5 @@
 import requests
+import re
 
 from discord.ext import commands
 
@@ -12,6 +13,13 @@ class Notification(commands.Cog):
         """
         Send message by telegram bot to user
         """
+        user_ids = re.findall('<.*>', message)
+
+        if user_ids:
+            for id_ in user_ids:
+                if id_ in settings.telegram_nick:
+                    message = message.replace(id_, settings.telegram_nick.get(id_))
+
         api_url = f'https://api.telegram.org/bot{settings.telegram_token}/sendMessage'
         author = ctx.author
         params = {
