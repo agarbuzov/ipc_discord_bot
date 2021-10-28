@@ -14,7 +14,7 @@ class Notification(commands.Cog):
         Send message by telegram bot to user
         """
         user_ids = re.findall('<.*>', message)
-
+        # Get member object by id -> get discriminator by member object -> associate this wth telegram_nick dict
         if user_ids:
             for id_ in user_ids:
                 if id_ in settings.telegram_nick:
