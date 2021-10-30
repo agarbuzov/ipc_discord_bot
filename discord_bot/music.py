@@ -13,13 +13,6 @@ import youtube_dl
 
 import settings
 
-# TODO fix One queue for all servers
-# TODO add move to if guild.id=guild.id
-# TODO multi use command play from one user -> Nonetype search
-# TODO something 403 in search
-# TODO Validators
-# TODO Split play command
-
 
 def validation(func):
 
