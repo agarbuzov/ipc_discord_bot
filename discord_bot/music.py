@@ -19,94 +19,105 @@ import settings
 # TODO something 403 in search
 # TODO Validators
 # TODO Split play command
+
+
+def validation(func):
+
+    async def wrapper(self, ctx):
+
+        if not self.voice_client:
+            return await ctx.send(f'{emoji.failure} **Bot is not connected to any voice channel on guild**')
+
+        return await func(self, ctx)
+    return wrapper
+
+
 class MusicPlayer(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
         self.ytdl = youtube_dl.YoutubeDL(settings.YTDL_OPTIONS)
-        self.players = {}
+        self.players = dict()
+        self.player = None
+        self.voice_client = None
+
+    async def cog_before_invoke(self, ctx: commands.Context):
+
+        self.player = self.players.get(ctx.guild.id)
+
+        self.voice_client = ctx.guild.voice_client
 
     @commands.command(name="play")
     async def _play(self, ctx: commands.Context, *, query: str):
         """
         Play youtube track
         """
-        if not query:
-            return await ctx.channel.send(f'{emoji.failure} **No data passed**')
+        with ctx.typing():
 
-        voice_client = ctx.guild.voice_client
+            if not query:
+                return await ctx.channel.send(f'{emoji.failure} **No data passed**')
 
-        if not voice_client:
-            # if not connected to some guild channel -> connect to author voice channel
-            author_voice_state = ctx.author.voice
+            if not self.voice_client:
+                # if not connected to some guild channel -> connect to author voice channel
+                author_voice_state = ctx.author.voice
 
-            if not author_voice_state:
-                # if user not connected to some voice channel
-                return await ctx.channel.send(f'{emoji.failure} **You are not connected to any voice channel on guild**')
+                if not author_voice_state:
+                    # if user not connected to some voice channel
+                    return await ctx.channel.send(f'{emoji.failure} '
+                                                  f'**You are not connected to any voice channel on guild**')
 
-            voice_client = await author_voice_state.channel.connect()
+                self.voice_client = await author_voice_state.channel.connect()
 
-        elif voice_client and voice_client.channel.id != ctx.author.voice.channel.id:
-            # if user in another voice channel -> move to him voice channel
-            await voice_client.move_to(ctx.author.voice.channel)
+            elif self.voice_client and self.voice_client.channel.id != ctx.author.voice.channel.id:
+                # if user in another voice channel -> move to him voice channel
+                await self.voice_client.move_to(ctx.author.voice.channel)
 
-        result = await self.search(query)
+            result = await self.search(query)
 
-        await self.send_embed(ctx, query, result['title'], voice_client)
+            await self.send_embed(ctx, query, result['title'], self.voice_client)
 
-        player = self.players.get(ctx.guild.id)
+            if not self.player:
+                self.player = Player(ctx, self.bot)
+                self.players[ctx.guild.id] = self.player
 
-        if not player:
-            player = Player(ctx, self.bot)
-            self.players[ctx.guild.id] = player
-
-        player.voice = voice_client
-        track = Track(result['url'], result['title'])
-        await player.queue.put(track)
+            self.player.voice = self.voice_client
+            track = Track(result['url'], result['title'])
+            await self.player.queue.put(track)
 
     @commands.command(name="pause", aliases=['p'])
+    @validation
     async def _pause(self, ctx: commands.Context):
         """
         Pause current track
         """
-        voice_client = ctx.guild.voice_client
-
-        if not voice_client:
-            return await ctx.send(f'{emoji.failure} **Bot is not connected to any voice channel on guild**')
-
-        if voice_client.is_paused():
+        if self.voice_client.is_paused():
             return await ctx.send(f'{emoji.failure} **Already paused**')
 
-        voice_client.pause()
+        self.voice_client.pause()
         await ctx.send(f'{emoji.pause_button} **Paused**')
 
     @commands.command(name="resume", aliases=['r'])
+    @validation
     async def _resume(self, ctx: commands.Context):
         """
         Resume current track
         """
-        voice_client = ctx.guild.voice_client
-
-        if not voice_client:
-            return await ctx.send(f'{emoji.failure} **Bot is not connected to any voice channel on guild**')
-
-        if voice_client.is_playing():
+        if self.voice_client.is_playing():
             return await ctx.send(f'{emoji.failure} **Already playing**')
 
-        voice_client.resume()
+        self.voice_client.resume()
         await ctx.send(f'{emoji.pause_button} **Resumed**')
 
     @commands.command(name="stop", aliases=['s'])
+    @validation
     async def _stop(self, ctx: commands.Context):
         """
         Clear queue and stop playing
         """
-        player = self.players.get(ctx.guild.id)
+        if self.player.queue > 0:
+            self.player.queue.clear()
 
-        if player.queue > 0:
-            player.queue.clear()
-
-        player.voice.stop()
+        self.player.voice.stop()
         await ctx.send(f'{emoji.stop_button} **Stopped**')
 
     @commands.command(name='queue', aliases=['q', 'que'])
@@ -127,59 +138,51 @@ class MusicPlayer(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name="next", aliases=['skip', 'nx', 'sk'])
+    @validation
     async def _next(self, ctx: commands.Context):
         """
         Skip current track in queue
         """
-        player = self.players.get(ctx.guild.id)
-
-        if not player.voice:
-            return await ctx.send(f'{emoji.failure} **Bot is not connected to any voice channel on guild**')
-
-        if not (player.voice.is_paused() or player.voice.is_playing()):
+        if not (self.player.voice.is_paused() or self.player.voice.is_playing()):
             return await ctx.send(f'{emoji.failure} **Nothing to skip**')
 
-        player.voice.stop()
+        self.player.loop = False
+
+        self.player.voice.stop()
         await ctx.send(f'{emoji.next_track} **Skipped**')
-        if player.voice.is_playing() and player.current:
-            await ctx.send(f'{emoji.youtube_icon} **Playing** `{player.current.title}`')
+        if self.player.voice.is_playing() and self.player.current:
+            await ctx.send(f'{emoji.youtube_icon} **Playing** `{self.player.current.title}`')
 
     @commands.command(name="now")
     async def _now(self, ctx: commands.Context):
         """
         Get current track
         """
-        player = self.players.get(ctx.guild.id)
-
-        if not player.voice.is_playing():
+        if not self.player.voice.is_playing():
             return await ctx.send(f'{emoji.failure} **Nothing is playing now**')
 
-        await ctx.send(f'{emoji.play_pause} `{player.current.title}` **is playing now**')
+        await ctx.send(f'{emoji.play_pause} `{self.player.current.title}` **is playing now**')
 
     @commands.command(name='remove', aliases=['rm'])
     async def _remove(self, ctx: commands.Context, index: int):
         """
         Remove track from queue by index
         """
-        player = self.players.get(ctx.guild.id)
-
-        if player.queue == 0:
+        if self.player.queue == 0:
             return await ctx.send(f'{emoji.failure} **Queue is empty**')
 
-        player.queue.remove(index - 1)
-        await ctx.send(f'{emoji.success} `{player.queue[index - 1].title}` **removed from queue**')
+        self.player.queue.remove(index - 1)
+        await ctx.send(f'{emoji.success} `{self.player.queue[index - 1].title}` **removed from queue**')
 
     @commands.command(name='clear', aliases=['cl'])
     async def _clear(self, ctx: commands.Context):
         """
         Clear the queue
         """
-        player = self.players.get(ctx.guild.id)
-
-        if len(player.queue) == 0:
+        if len(self.player.queue) == 0:
             return await ctx.send(f'{emoji.failure} **Queue is empty**')
 
-        player.queue.clear()
+        self.player.queue.clear()
 
         await ctx.send(f'{emoji.success} **Queue has been cleared**')
 
@@ -188,14 +191,12 @@ class MusicPlayer(commands.Cog):
         """
         Loop current track
         """
-        player = self.players.get(ctx.guild.id)
-
-        if not player.voice.is_playing():
+        if not self.player.voice.is_playing():
             return await ctx.send(f'{emoji.failure} **Nothing is playing now**')
 
-        player.loop = not player.loop
+        self.player.loop = not self.player.loop
 
-        if player.loop:
+        if self.player.loop:
             await ctx.send(f'{emoji.success} **Track is set to repeat**')
         else:
             await ctx.send(f'{emoji.success} **Repetition removed**')
@@ -333,13 +334,3 @@ class Playlist:
 
         with open(f'{guild_id}_{name}.json', 'w') as file:
             json.dump(data, file, indent=4)
-
-    # @staticmethod
-    # def playlist(guild_id: int, name: str):
-    #     with open(f'{guild_id}_{name}.json', 'r') as file:
-    #         data = json.load(file)
-    #     for track in data:
-            # Create player if not exists and fill queue
-            # Or add tracks to already exists queue
-            # past to queue FFmpegPCMAudio objects
-
