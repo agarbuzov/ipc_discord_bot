@@ -67,15 +67,17 @@ class MusicPlayer(commands.Cog):
 
             result = await self.search(query)
 
-            await self.send_embed(ctx, query, result['title'], self.voice_client)
-
             if not self.player:
                 self.player = Player(ctx, self.bot)
                 self.players[ctx.guild.id] = self.player
 
             self.player.voice = self.voice_client
+
             track = Track(result['url'], result['title'])
+
             await self.player.queue.put(track)
+
+            await self.send_embed(ctx, query, result['title'], self.voice_client)
 
     @commands.command(name="pause", aliases=['p'])
     @validation
@@ -107,10 +109,13 @@ class MusicPlayer(commands.Cog):
         """
         Clear queue and stop playing
         """
-        if self.player.queue > 0:
+        self.player.loop = False
+
+        if len(self.player.queue) > 0:
             self.player.queue.clear()
 
         self.player.voice.stop()
+
         await ctx.send(f'{emoji.stop_button} **Stopped**')
 
     @commands.command(name='queue', aliases=['q', 'que'])
@@ -208,7 +213,7 @@ class MusicPlayer(commands.Cog):
 
     @staticmethod
     async def send_embed(ctx: commands.Context, query: str, result: dict, voice):
-        if voice.is_playing():
+        if voice.is_playing() or voice.is_paused():
             message = f"""
             {emoji.youtube_icon} **Searching** {emoji.magnifier} `{query}`\n**Added to the queue** {emoji.notes} `{result}`
             """
@@ -247,6 +252,7 @@ class Player:
         self.next = asyncio.Event()
         self.loop = False
         self.main_loop = self.bot.loop.create_task(self.player_loop())
+        self.message = None
 
     def __del__(self):
         self.main_loop.cancel()
@@ -267,6 +273,11 @@ class Player:
                     return
 
             self.voice.play(await self.current.create_source(), after=self.next_song)
+
+            if not self.message:
+                self.message = await self.ctx.send(f'{emoji.play_pause} `{self.current.title}` **is playing now**', view=PlayView(self))
+            else:
+                await self.message.edit(content=f'{emoji.play_pause} `{self.current.title}` **is playing now**', view=PlayView(self))
 
             await self.next.wait()
 
@@ -327,3 +338,55 @@ class Playlist:
 
         with open(f'{guild_id}_{name}.json', 'w') as file:
             json.dump(data, file, indent=4)
+
+
+class PlayView(discord.ui.View):
+
+    def __init__(self, player):
+        super().__init__()
+        self.add_item(self.Pause(player))
+        self.add_item(self.Next(player))
+        self.add_item(self.Repeat(player))
+
+    class Pause(discord.ui.Button):
+        def __init__(self, player):
+            self.player = player
+
+            if self.player.voice.is_playing():
+                button_icon = '⏸'
+                self.action = self.player.voice.pause
+            else:
+                button_icon = '▶'
+                self.action = self.player.voice.resume
+
+            super().__init__(style=discord.ButtonStyle.secondary, emoji=discord.PartialEmoji(name=button_icon))
+
+        async def callback(self, interaction: discord.Interaction):
+            self.action()
+            await interaction.response.edit_message(view=PlayView(self.player))
+            # await interaction.channel.send('Pause')
+
+    class Next(discord.ui.Button):
+        def __init__(self, player):
+            self.player = player
+            super().__init__(style=discord.ButtonStyle.secondary, emoji=discord.PartialEmoji(name='⏩'))
+
+        async def callback(self, interaction: discord.Interaction):
+            self.player.voice.stop()
+            # await interaction.channel.send('Next')
+
+    class Repeat(discord.ui.Button):
+        def __init__(self, player):
+            self.player = player
+
+            if not self.player.loop:
+                style = discord.ButtonStyle.secondary
+            else:
+                style = discord.ButtonStyle.primary
+
+            super().__init__(style=style, emoji=discord.PartialEmoji(name='🔁'))
+
+        async def callback(self, interaction: discord.Interaction):
+            self.player.loop = not self.player.loop
+            await interaction.response.edit_message(view=PlayView(self.player))
+            # await interaction.channel.send(self.player.loop)
