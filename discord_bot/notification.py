@@ -17,7 +17,8 @@ class Notification(commands.Cog):
 
         if user_ids:
             for id_ in user_ids:
-                if re.findall(r'<\W*(\d*)>', id_)[0] in settings.telegram_nick:
+                id_ = re.findall(r'<\W*(\d*)>', id_)[0]
+                if id_ in settings.telegram_nick:
                     message = message.replace(id_, settings.telegram_nick.get(id_))
 
         api_url = f'https://api.telegram.org/bot{settings.telegram_token}/sendMessage'
