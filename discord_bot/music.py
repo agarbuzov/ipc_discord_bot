@@ -36,9 +36,14 @@ class MusicPlayer(commands.Cog):
 
     async def cog_before_invoke(self, ctx: commands.Context):
 
-        self.player = self.players.get(ctx.guild.id)
+        self.player: Player = self.players.get(ctx.guild.id)
 
-        self.voice_client = ctx.guild.voice_client
+        self.voice_client: discord.VoiceProtocol = ctx.guild.voice_client
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if self.player and self.voice_client and self.player.message and message.id != self.player.message.id:
+            await self.player.resend_message()
 
     @commands.command(name="play")
     async def _play(self, ctx: commands.Context, *, query: str):
@@ -76,7 +81,7 @@ class MusicPlayer(commands.Cog):
             track = Track(result['url'], result['title'])
 
             await self.player.queue.put(track)
-
+            await ctx.message.delete(delay=5)
             await self.send_embed(ctx, query, result['title'], self.voice_client)
 
     @commands.command(name="pause", aliases=['p'])
@@ -221,7 +226,8 @@ class MusicPlayer(commands.Cog):
             message = f"""
             {emoji.youtube_icon} **Searching** {emoji.magnifier} `{query}`\n**Playing** {emoji.notes} `{result}`
             """
-        await ctx.send(message)
+        msg = await ctx.send(message)
+        await msg.delete(delay=5)
 
     @commands.command(name="create")
     async def _create(self, ctx: commands.Context, name: str):
@@ -275,17 +281,37 @@ class Player:
             self.voice.play(await self.current.create_source(), after=self.next_song)
 
             if not self.message:
-                self.message = await self.ctx.send(f'{emoji.play_pause} `{self.current.title}` **is playing now**', view=PlayView(self))
+                await self.send_message()
+            elif self.message.id != self.ctx.channel.last_message_id:
+                await self.resend_message()
             else:
-                await self.message.edit(content=f'{emoji.play_pause} `{self.current.title}` **is playing now**', view=PlayView(self))
+                await self.edit_message()
 
             await self.next.wait()
 
     def next_song(self, error=None):
         self.next.set()
 
+    async def send_message(self):
+        # if not message with player
+        self.message = await self.ctx.send(f'{emoji.play_pause} `{self.current.title}` **is playing now**',
+                                           view=PlayView(self))
+
+    async def resend_message(self):
+        # if message with player isn't last on channel
+        self.message = await self.message.delete()
+        self.message = await self.ctx.send(f'{emoji.play_pause} `{self.current.title}` **is playing now**',
+                                           view=PlayView(self))
+        print(self.message)
+
+    async def edit_message(self):
+        await self.message.edit(content=f'{emoji.play_pause} `{self.current.title}` **is playing now**',
+                                view=PlayView(self))
+
     async def stop(self):
         self.queue.clear()
+
+        self.message = await self.message.delete()
 
         if self.voice:
             await self.voice.disconnect()
