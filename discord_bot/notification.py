@@ -13,11 +13,11 @@ class Notification(commands.Cog):
         """
         Send message by telegram bot to user
         """
-        user_ids = re.findall(r'<\W*(\d*)>', message)
+        user_ids = re.findall(r'<.*>', message)
 
         if user_ids:
             for id_ in user_ids:
-                if id_ in settings.telegram_nick:
+                if re.findall(r'<\W*(\d*)>', id_)[0] in settings.telegram_nick:
                     message = message.replace(id_, settings.telegram_nick.get(id_))
 
         api_url = f'https://api.telegram.org/bot{settings.telegram_token}/sendMessage'
