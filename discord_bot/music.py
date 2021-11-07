@@ -2,6 +2,7 @@ import asyncio
 import json
 import functools
 import inflect
+from loguru import logger
 
 from datetime import datetime
 from async_timeout import timeout
@@ -19,7 +20,8 @@ def validation(func):
     async def wrapper(self, ctx):
 
         if not self.voice_client:
-            return await ctx.send(f'{emoji.failure} **Bot is not connected to any voice channel on guild**')
+            return await ctx.send(f'{emoji.failure} **Bot is not connected to any voice channel on guild**',
+                                  delete_after=5)
 
         return await func(self, ctx)
     return wrapper
@@ -42,7 +44,8 @@ class MusicPlayer(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if self.player and self.voice_client and self.player.message and message.id != self.player.message.id:
+        if self.player and self.voice_client and self.player.message and message.id != self.player.message.id and\
+                message.channel == self.player.message.channel:
             await self.player.resend_message()
 
     @commands.command(name="play")
@@ -53,7 +56,7 @@ class MusicPlayer(commands.Cog):
         with ctx.typing():
 
             if not query:
-                return await ctx.channel.send(f'{emoji.failure} **No data passed**')
+                return await ctx.channel.send(f'{emoji.failure} **No data passed**', delete_after=5)
 
             if not self.voice_client:
                 # if not connected to some guild channel -> connect to author voice channel
@@ -62,7 +65,8 @@ class MusicPlayer(commands.Cog):
                 if not author_voice_state:
                     # if user not connected to some voice channel
                     return await ctx.channel.send(f'{emoji.failure} '
-                                                  f'**You are not connected to any voice channel on guild**')
+                                                  f'**You are not connected to any voice channel on guild**',
+                                                  delete_after=5)
 
                 self.voice_client = await author_voice_state.channel.connect()
 
@@ -91,10 +95,10 @@ class MusicPlayer(commands.Cog):
         Pause current track
         """
         if self.voice_client.is_paused():
-            return await ctx.send(f'{emoji.failure} **Already paused**')
+            return await ctx.send(f'{emoji.failure} **Already paused**', delete_after=5)
 
         self.voice_client.pause()
-        await ctx.send(f'{emoji.pause_button} **Paused**')
+        await ctx.send(f'{emoji.pause_button} **Paused**', delete_after=5)
 
     @commands.command(name="resume", aliases=['r'])
     @validation
@@ -103,10 +107,10 @@ class MusicPlayer(commands.Cog):
         Resume current track
         """
         if self.voice_client.is_playing():
-            return await ctx.send(f'{emoji.failure} **Already playing**')
+            return await ctx.send(f'{emoji.failure} **Already playing**', delete_after=5)
 
         self.voice_client.resume()
-        await ctx.send(f'{emoji.pause_button} **Resumed**')
+        await ctx.send(f'{emoji.pause_button} **Resumed**', delete_after=5)
 
     @commands.command(name="stop", aliases=['s'])
     @validation
@@ -121,7 +125,7 @@ class MusicPlayer(commands.Cog):
 
         self.player.voice.stop()
 
-        await ctx.send(f'{emoji.stop_button} **Stopped**')
+        await ctx.send(f'{emoji.stop_button} **Stopped**', delete_after=5)
 
     @commands.command(name='queue', aliases=['q', 'que'])
     async def _queue(self, ctx: commands.Context):
@@ -147,14 +151,14 @@ class MusicPlayer(commands.Cog):
         Skip current track in queue
         """
         if not (self.player.voice.is_paused() or self.player.voice.is_playing()):
-            return await ctx.send(f'{emoji.failure} **Nothing to skip**')
+            return await ctx.send(f'{emoji.failure} **Nothing to skip**', delete_after=5)
 
         self.player.loop = False
 
         self.player.voice.stop()
-        await ctx.send(f'{emoji.next_track} **Skipped**')
+        await ctx.send(f'{emoji.next_track} **Skipped**', delete_after=5)
         if self.player.voice.is_playing() and self.player.current:
-            await ctx.send(f'{emoji.youtube_icon} **Playing** `{self.player.current.title}`')
+            await ctx.send(f'{emoji.youtube_icon} **Playing** `{self.player.current.title}`', delete_after=5)
 
     @commands.command(name="now")
     async def _now(self, ctx: commands.Context):
@@ -162,9 +166,9 @@ class MusicPlayer(commands.Cog):
         Get current track
         """
         if not self.player.voice.is_playing():
-            return await ctx.send(f'{emoji.failure} **Nothing is playing now**')
+            return await ctx.send(f'{emoji.failure} **Nothing is playing now**', delete_after=5)
 
-        await ctx.send(f'{emoji.play_pause} `{self.player.current.title}` **is playing now**')
+        await ctx.send(f'{emoji.play_pause} `{self.player.current.title}` **is playing now**', delete_after=5)
 
     @commands.command(name='remove', aliases=['rm'])
     async def _remove(self, ctx: commands.Context, index: int):
@@ -172,10 +176,10 @@ class MusicPlayer(commands.Cog):
         Remove track from queue by index
         """
         if self.player.queue == 0:
-            return await ctx.send(f'{emoji.failure} **Queue is empty**')
+            return await ctx.send(f'{emoji.failure} **Queue is empty**', delete_after=5)
 
         self.player.queue.remove(index - 1)
-        await ctx.send(f'{emoji.success} `{self.player.queue[index - 1].title}` **removed from queue**')
+        await ctx.send(f'{emoji.success} `{self.player.queue[index - 1].title}` **removed from queue**', delete_after=5)
 
     @commands.command(name='clear', aliases=['cl'])
     async def _clear(self, ctx: commands.Context):
@@ -183,11 +187,11 @@ class MusicPlayer(commands.Cog):
         Clear the queue
         """
         if len(self.player.queue) == 0:
-            return await ctx.send(f'{emoji.failure} **Queue is empty**')
+            return await ctx.send(f'{emoji.failure} **Queue is empty**', delete_after=5)
 
         self.player.queue.clear()
 
-        await ctx.send(f'{emoji.success} **Queue has been cleared**')
+        await ctx.send(f'{emoji.success} **Queue has been cleared**', delete_after=5)
 
     @commands.command(name="loop", aliases=['l', 'repeat', 'rp'])
     async def _loop(self, ctx: commands.Context):
@@ -195,19 +199,20 @@ class MusicPlayer(commands.Cog):
         Loop current track
         """
         if not self.player.voice.is_playing():
-            return await ctx.send(f'{emoji.failure} **Nothing is playing now**')
+            return await ctx.send(f'{emoji.failure} **Nothing is playing now**', delete_after=5)
 
         self.player.loop = not self.player.loop
 
         if self.player.loop:
-            await ctx.send(f'{emoji.success} **Track is set to repeat**')
+            message = f'{emoji.success} **Track is set to repeat**'
         else:
-            await ctx.send(f'{emoji.success} **Repetition removed**')
+            message = f'{emoji.success} **Repetition removed**'
+        await ctx.send(message, delete_after=5)
 
+    @logger.catch
     async def search(self, query):
-        loop = asyncio.get_event_loop()
         partial = functools.partial(self.ytdl.extract_info, query, download=False)
-        search_data = await loop.run_in_executor(None, partial)
+        search_data = await self.bot.loop.run_in_executor(None, partial)
 
         if 'entries' not in search_data:
             result = search_data
@@ -219,15 +224,12 @@ class MusicPlayer(commands.Cog):
     @staticmethod
     async def send_embed(ctx: commands.Context, query: str, result: dict, voice):
         if voice.is_playing() or voice.is_paused():
-            message = f"""
-            {emoji.youtube_icon} **Searching** {emoji.magnifier} `{query}`\n**Added to the queue** {emoji.notes} `{result}`
-            """
+            message = f'{emoji.youtube_icon} **Searching** {emoji.magnifier} ' \
+                      f'`{query}`\n**Added to the queue** {emoji.notes} `{result}`'
         else:
-            message = f"""
-            {emoji.youtube_icon} **Searching** {emoji.magnifier} `{query}`\n**Playing** {emoji.notes} `{result}`
-            """
-        msg = await ctx.send(message)
-        await msg.delete(delay=5)
+            message = f'{emoji.youtube_icon} **Searching** {emoji.magnifier} ' \
+                      f'`{query}`\n**Playing** {emoji.notes} `{result}`'
+        await ctx.send(message, delete_after=5)
 
     @commands.command(name="create")
     async def _create(self, ctx: commands.Context, name: str):
@@ -258,10 +260,22 @@ class Player:
         self.next = asyncio.Event()
         self.loop = False
         self.main_loop = self.bot.loop.create_task(self.player_loop())
+        self.check_voice_members = self.bot.loop.create_task(self.check_members_loop())
         self.message = None
 
     def __del__(self):
         self.main_loop.cancel()
+        self.check_voice_members.cancel()
+
+    @logger.catch
+    async def check_members_loop(self):
+        while True:
+            logger.debug('check_members_loop')
+            await asyncio.sleep(180)
+            if len(self.voice.channel.members) == 1 and self.bot.user in self.voice.channel.members:
+                await self.stop()
+                self.main_loop.cancel()
+                self.check_voice_members.cancel()
 
     async def player_loop(self):
         while True:
@@ -284,6 +298,8 @@ class Player:
                 await self.send_message()
             elif self.message.id != self.ctx.channel.last_message_id:
                 await self.resend_message()
+            # elif self.loop:
+            #     pass
             else:
                 await self.edit_message()
 
@@ -296,17 +312,20 @@ class Player:
         # if not message with player
         self.message = await self.ctx.send(f'{emoji.play_pause} `{self.current.title}` **is playing now**',
                                            view=PlayView(self))
+        logger.debug(self.message)
 
+    @logger.catch
     async def resend_message(self):
         # if message with player isn't last on channel
         self.message = await self.message.delete()
         self.message = await self.ctx.send(f'{emoji.play_pause} `{self.current.title}` **is playing now**',
                                            view=PlayView(self))
-        print(self.message)
+        logger.debug(self.message)
 
     async def edit_message(self):
         await self.message.edit(content=f'{emoji.play_pause} `{self.current.title}` **is playing now**',
                                 view=PlayView(self))
+        logger.debug(self.message)
 
     async def stop(self):
         self.queue.clear()
@@ -379,13 +398,13 @@ class PlayView(discord.ui.View):
             self.player = player
 
             if self.player.voice.is_playing():
-                button_icon = '⏸'
                 self.action = self.player.voice.pause
+                style = discord.ButtonStyle.secondary
             else:
-                button_icon = '▶'
                 self.action = self.player.voice.resume
+                style = discord.ButtonStyle.primary
 
-            super().__init__(style=discord.ButtonStyle.secondary, emoji=discord.PartialEmoji(name=button_icon))
+            super().__init__(style=style, emoji=discord.PartialEmoji(name='⏯'))
 
         async def callback(self, interaction: discord.Interaction):
             self.action()
@@ -398,6 +417,7 @@ class PlayView(discord.ui.View):
             super().__init__(style=discord.ButtonStyle.secondary, emoji=discord.PartialEmoji(name='⏩'))
 
         async def callback(self, interaction: discord.Interaction):
+            self.player.loop = False
             self.player.voice.stop()
             # await interaction.channel.send('Next')
 

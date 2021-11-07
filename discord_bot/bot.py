@@ -1,4 +1,5 @@
 import settings
+from loguru import logger
 
 import discord
 from discord.ext import commands
@@ -7,6 +8,7 @@ from music import MusicPlayer
 from notification import Notification
 
 bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
+logger.add("discord_bot.log", rotation="50 MB", compression="zip", level="DEBUG")
 
 
 @bot.event
