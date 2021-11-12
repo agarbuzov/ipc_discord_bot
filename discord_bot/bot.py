@@ -1,3 +1,5 @@
+import json
+
 import settings
 from loguru import logger
 
@@ -7,13 +9,18 @@ from discord.ext import commands
 from music import MusicPlayer
 from notification import Notification
 
-bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
+bot = commands.Bot(command_prefix='!', intents=discord.Intents.all(), enable_debug_events=True)
 logger.add("discord_bot.log", rotation="50 MB", compression="zip", level="DEBUG")
 
 
 @bot.event
 async def on_ready():
     print(f'Bot {bot.user} is online')
+
+
+@bot.event
+async def on_socket_raw_receive(msg):
+    logger.debug(json.dumps(json.loads(msg), indent=4, ensure_ascii=False))
 
 
 @bot.command(name="send")
