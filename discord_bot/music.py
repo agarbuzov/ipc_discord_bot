@@ -14,6 +14,8 @@ import youtube_dl
 
 import settings
 
+ytdl = youtube_dl.YoutubeDL(settings.YTDL_OPTIONS)
+
 
 def validation(func):
 
@@ -31,7 +33,6 @@ class MusicPlayer(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.ytdl = youtube_dl.YoutubeDL(settings.YTDL_OPTIONS)
         self.players = dict()
         self.player = None
         self.voice_client = None
@@ -82,7 +83,7 @@ class MusicPlayer(commands.Cog):
 
             self.player.voice = self.voice_client
 
-            track = Track(result['url'], result['title'])
+            track = Track(result['webpage_url'], result['title'])
 
             await self.player.queue.put(track)
             await ctx.message.delete(delay=5)
@@ -211,7 +212,7 @@ class MusicPlayer(commands.Cog):
 
     @logger.catch
     async def search(self, query):
-        partial = functools.partial(self.ytdl.extract_info, query, download=False)
+        partial = functools.partial(ytdl.extract_info, query, download=False)
         search_data = await self.bot.loop.run_in_executor(None, partial)
 
         if 'entries' not in search_data:
@@ -292,7 +293,7 @@ class Player:
                     self.bot.loop.create_task(self.stop())
                     return
 
-            self.voice.play(await self.current.create_source(), after=self.next_song)
+            self.voice.play(await self.current.create_source(self.bot.loop), after=self.next_song)
 
             if not self.message:
                 await self.send_message()
@@ -341,12 +342,15 @@ class Player:
 
 class Track:
 
-    def __init__(self, url, title):
-        self.url = url
+    def __init__(self, webpage_url, title):
+        self.webpage_url = webpage_url
         self.title = title
 
-    async def create_source(self):
-        return discord.FFmpegPCMAudio(self.url, **settings.FFMPEG_OPTIONS)
+    async def create_source(self, loop):
+        partial = functools.partial(ytdl.extract_info, self.webpage_url, download=False)
+        result = await loop.run_in_executor(None, partial)
+
+        return discord.FFmpegPCMAudio(result['url'], **settings.FFMPEG_OPTIONS)
 
 
 class TrackQueue(asyncio.Queue):
