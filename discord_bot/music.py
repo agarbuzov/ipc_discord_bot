@@ -1,18 +1,15 @@
 import asyncio
-import json
-import functools
 import inflect
-from loguru import logger
-
-from datetime import datetime
-from async_timeout import timeout
-
 import discord
-from discord.ext import commands
-from utils import emoji
+import datetime
+import settings
+import functools
 import youtube_dl
 
-import settings
+from loguru import logger
+from async_timeout import timeout
+from discord.ext import commands
+from utils import emoji
 
 ytdl = youtube_dl.YoutubeDL(settings.YTDL_OPTIONS)
 
@@ -49,6 +46,12 @@ class MusicPlayer(commands.Cog):
                 message.channel == self.player.message.channel:
             await self.player.resend_message()
 
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        if member == self.bot.user:
+            if after.channel is None:
+                await self.player.stop()
+
     @commands.command(name="play")
     async def _play(self, ctx: commands.Context, *, query: str):
         """
@@ -83,7 +86,7 @@ class MusicPlayer(commands.Cog):
 
             self.player.voice = self.voice_client
 
-            track = Track(result['webpage_url'], result['title'])
+            track = Track(result['webpage_url'], result['title'], result['duration'])
 
             await self.player.queue.put(track)
             await ctx.message.delete(delay=5)
@@ -232,22 +235,6 @@ class MusicPlayer(commands.Cog):
                       f'`{query}`\n**Playing** {emoji.notes} `{result}`'
         await ctx.send(message, delete_after=5)
 
-    @commands.command(name="create")
-    async def _create(self, ctx: commands.Context, name: str):
-        guild = ctx.guild
-        Playlist.create(guild.id, name)
-
-    @commands.command(name="add")
-    async def _add(self, ctx: commands.Context, playlist, url):
-        appender = ctx.author
-        result = await self.search(url)
-        data = {
-            "title": result['title'],
-            "date": datetime.now().__str__(),
-            "appender": appender.id.__str__()
-        }
-        Playlist.add_track(ctx.guild.id, playlist, data)
-
 
 class Player:
 
@@ -272,11 +259,9 @@ class Player:
     async def check_members_loop(self):
         while True:
             logger.debug('check_members_loop')
-            await asyncio.sleep(180)
+            await asyncio.sleep(10)
             if len(self.voice.channel.members) == 1 and self.bot.user in self.voice.channel.members:
                 await self.stop()
-                self.main_loop.cancel()
-                self.check_voice_members.cancel()
 
     async def player_loop(self):
         while True:
@@ -311,7 +296,8 @@ class Player:
 
     async def send_message(self):
         # if not message with player
-        self.message = await self.ctx.send(f'{emoji.play_pause} `{self.current.title}` **is playing now**',
+        self.message = await self.ctx.send(f'{emoji.play_pause} `{self.current.title}` **is playing now**\n'
+                                           f'{emoji.clock} **Duration**: `{self.current.duration}`',
                                            view=PlayView(self))
         logger.debug(self.message)
 
@@ -319,12 +305,14 @@ class Player:
     async def resend_message(self):
         # if message with player isn't last on channel
         self.message = await self.message.delete()
-        self.message = await self.ctx.send(f'{emoji.play_pause} `{self.current.title}` **is playing now**',
+        self.message = await self.ctx.send(f'{emoji.play_pause} `{self.current.title}` **is playing now**\n'
+                                           f'{emoji.clock} **Duration**: `{self.current.duration}`',
                                            view=PlayView(self))
         logger.debug(self.message)
 
     async def edit_message(self):
-        await self.message.edit(content=f'{emoji.play_pause} `{self.current.title}` **is playing now**',
+        await self.message.edit(content=f'{emoji.play_pause} `{self.current.title}` **is playing now**\n'
+                                        f'{emoji.clock} **Duration**: `{self.current.duration}`',
                                 view=PlayView(self))
         logger.debug(self.message)
 
@@ -337,14 +325,18 @@ class Player:
             await self.voice.disconnect()
             self.voice = None
 
+        self.main_loop.cancel()
+        self.check_voice_members.cancel()
+
         del self.ctx.cog.players[self.guild_id]
 
 
 class Track:
 
-    def __init__(self, webpage_url, title):
+    def __init__(self, webpage_url, title, duration):
         self.webpage_url = webpage_url
         self.title = title
+        self.duration = str(datetime.timedelta(seconds=duration))
 
     async def create_source(self, loop):
         partial = functools.partial(ytdl.extract_info, self.webpage_url, download=False)
@@ -371,28 +363,10 @@ class TrackQueue(asyncio.Queue):
         return self._queue.__iter__()
 
 
-class Playlist:
-
-    @staticmethod
-    def create(guild_id: int, name: str):
-        with open(f'{guild_id}_{name}.json') as file:
-            json.dump([], file, indent=4)
-
-    @staticmethod
-    def add_track(guild_id, name: str, row: dict):
-        with open(f'{guild_id}_{name}.json', 'r') as file:
-            data = json.load(file)
-
-        data.append(row)
-
-        with open(f'{guild_id}_{name}.json', 'w') as file:
-            json.dump(data, file, indent=4)
-
-
 class PlayView(discord.ui.View):
 
     def __init__(self, player):
-        super().__init__()
+        super().__init__(timeout=None)
         self.add_item(self.Pause(player))
         self.add_item(self.Next(player))
         self.add_item(self.Repeat(player))
@@ -413,7 +387,6 @@ class PlayView(discord.ui.View):
         async def callback(self, interaction: discord.Interaction):
             self.action()
             await interaction.response.edit_message(view=PlayView(self.player))
-            # await interaction.channel.send('Pause')
 
     class Next(discord.ui.Button):
         def __init__(self, player):
@@ -423,7 +396,6 @@ class PlayView(discord.ui.View):
         async def callback(self, interaction: discord.Interaction):
             self.player.loop = False
             self.player.voice.stop()
-            # await interaction.channel.send('Next')
 
     class Repeat(discord.ui.Button):
         def __init__(self, player):
@@ -439,4 +411,3 @@ class PlayView(discord.ui.View):
         async def callback(self, interaction: discord.Interaction):
             self.player.loop = not self.player.loop
             await interaction.response.edit_message(view=PlayView(self.player))
-            # await interaction.channel.send(self.player.loop)
