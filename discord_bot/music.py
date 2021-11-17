@@ -6,6 +6,7 @@ import settings
 import functools
 import youtube_dl
 
+from typing import Optional
 from loguru import logger
 from async_timeout import timeout
 from discord.ext import commands
@@ -28,11 +29,11 @@ def validation(func):
 
 class MusicPlayer(commands.Cog):
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.players = dict()
-        self.player = None
-        self.voice_client = None
+        self.player: Optional[Player] = None
+        self.voice_client: Optional[discord.VoiceClient] = None
 
     async def cog_before_invoke(self, ctx: commands.Context):
 
@@ -47,7 +48,8 @@ class MusicPlayer(commands.Cog):
             await self.player.resend_message()
 
     @commands.Cog.listener()
-    async def on_voice_state_update(self, member, before, after):
+    async def on_voice_state_update(self, member: discord.Member,
+                                    before: discord.VoiceState, after: discord.VoiceState):
         if member == self.bot.user:
             if after.channel is None:
                 await self.player.stop()
@@ -141,11 +143,12 @@ class MusicPlayer(commands.Cog):
         queue = ''
 
         for i, track in enumerate(player.queue):
-            queue += f'{i+1}.{track.title}\n'
+            queue += f'{i+1}.{track.title} {track.duration}\n'
 
         embed = discord.Embed(title=f'{emoji.notes} {len(player.queue)}'
                                     f' {corrector.plural("track", len(player.queue))} in queue',
                               description=f'{queue}')
+        await ctx.message.delete(delay=5)
         await ctx.send(embed=embed)
 
     @commands.command(name="next", aliases=['skip', 'nx', 'sk'])
@@ -214,7 +217,7 @@ class MusicPlayer(commands.Cog):
         await ctx.send(message, delete_after=5)
 
     @logger.catch
-    async def search(self, query):
+    async def search(self, query: str):
         partial = functools.partial(ytdl.extract_info, query, download=False)
         search_data = await self.bot.loop.run_in_executor(None, partial)
 
@@ -238,18 +241,18 @@ class MusicPlayer(commands.Cog):
 
 class Player:
 
-    def __init__(self, ctx: commands.Context, bot: commands.Bot):
-        self.bot = bot
-        self.ctx = ctx
-        self.guild_id = ctx.guild.id
-        self.current = None
-        self.voice = None
+    def __init__(self, ctx: commands.Context, bot: commands.Bot) -> None:
+        self.bot: commands.Bot = bot
+        self.ctx: commands.Context = ctx
+        self.guild_id: int = ctx.guild.id
+        self.current: Optional[Track] = None
+        self.voice: Optional[discord.VoiceClient] = None
         self.queue = TrackQueue()
         self.next = asyncio.Event()
-        self.loop = False
+        self.loop: bool = False
         self.main_loop = self.bot.loop.create_task(self.player_loop())
         self.check_voice_members = self.bot.loop.create_task(self.check_members_loop())
-        self.message = None
+        self.message: Optional[discord.Message] = None
 
     def __del__(self):
         self.main_loop.cancel()
@@ -333,7 +336,7 @@ class Player:
 
 class Track:
 
-    def __init__(self, webpage_url, title, duration):
+    def __init__(self, webpage_url: str, title: str, duration: int):
         self.webpage_url = webpage_url
         self.title = title
         self.duration = str(datetime.timedelta(seconds=duration))
@@ -372,7 +375,7 @@ class PlayView(discord.ui.View):
         self.add_item(self.Repeat(player))
 
     class Pause(discord.ui.Button):
-        def __init__(self, player):
+        def __init__(self, player: Player):
             self.player = player
 
             if self.player.voice.is_playing():
@@ -389,7 +392,7 @@ class PlayView(discord.ui.View):
             await interaction.response.edit_message(view=PlayView(self.player))
 
     class Next(discord.ui.Button):
-        def __init__(self, player):
+        def __init__(self, player: Player):
             self.player = player
             super().__init__(style=discord.ButtonStyle.secondary, emoji=discord.PartialEmoji(name='⏩'))
 
@@ -398,7 +401,7 @@ class PlayView(discord.ui.View):
             self.player.voice.stop()
 
     class Repeat(discord.ui.Button):
-        def __init__(self, player):
+        def __init__(self, player: Player):
             self.player = player
 
             if not self.player.loop:
