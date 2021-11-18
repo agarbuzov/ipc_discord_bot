@@ -55,6 +55,7 @@ class MusicPlayer(commands.Cog):
                 await self.player.stop()
 
     @commands.command(name="play")
+    @logger.catch
     async def _play(self, ctx: commands.Context, *, query: str):
         """
         Play youtube track
@@ -262,10 +263,11 @@ class Player:
     async def check_members_loop(self):
         while True:
             logger.debug('check_members_loop')
-            await asyncio.sleep(10)
+            await asyncio.sleep(180)
             if len(self.voice.channel.members) == 1 and self.bot.user in self.voice.channel.members:
                 await self.stop()
 
+    @logger.catch
     async def player_loop(self):
         while True:
 
@@ -280,8 +282,10 @@ class Player:
                     # Dont disconnect from channel when use loop, why ???
                     self.bot.loop.create_task(self.stop())
                     return
-
-            self.voice.play(await self.current.create_source(self.bot.loop), after=self.next_song)
+            # self.voice.play(self.current.create_source(self.bot.loop), after=self.next_song)
+            source = await self.current.create_source(self.bot.loop)
+            logger.debug(source)
+            self.voice.play(source, after=self.next_song)
 
             if not self.message:
                 await self.send_message()
@@ -319,6 +323,7 @@ class Player:
                                 view=PlayView(self))
         logger.debug(self.message)
 
+    @logger.catch
     async def stop(self):
         self.queue.clear()
 
