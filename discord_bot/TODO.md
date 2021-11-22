@@ -8,6 +8,8 @@
   - > Now requesting stream link direct before start playing (should help with expiring stream link)
   - > Youtubedl cache set to False
 
+- [] Playlists 
+
 - [] multi use command play from one user -> Nonetype search
 
 - [] Asyncio tasks are not canceled after bot leaving from voice
@@ -19,6 +21,8 @@
 - [] Split play between guilds
 
 - [] On error message already deleted
-- 
+
 - [x] Show track duration
-  - > Will be refactoring in future 
+  - > Will be refactoring in future
+
+- [] Recreate control panel message if not exist

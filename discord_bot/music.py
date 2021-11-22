@@ -48,11 +48,16 @@ class MusicPlayer(commands.Cog):
             await self.player.resend_message()
 
     @commands.Cog.listener()
+    @logger.catch
     async def on_voice_state_update(self, member: discord.Member,
                                     before: discord.VoiceState, after: discord.VoiceState):
         if member == self.bot.user:
             if after.channel is None:
-                await self.player.stop()
+                await asyncio.sleep(5)
+                logger.debug(before.channel.id)
+                logger.debug([client.channel.id for client in self.bot.voice_clients])
+                if before.channel.id not in [client.channel.id for client in self.bot.voice_clients]:
+                    await self.player.stop()
 
     @commands.command(name="play")
     @logger.catch
