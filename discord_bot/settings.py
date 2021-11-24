@@ -27,6 +27,7 @@ YTDL_OPTIONS = {
     'logtostderr': False,
     'quiet': True,
     'no_warnings': True,
+    'cachedir': False,
     'default_search': 'auto',
     'source_address': '0.0.0.0',
     'username': yt_username,
@@ -35,8 +36,8 @@ YTDL_OPTIONS = {
 }
 
 telegram_nick = {
-    '<@!291599775936282624>': '@agarbuzov ',
-    '<@!299154812858269697>': '@Tema_N7',
-    '<@!289480655551856641>': '@Gelbart',
-    '<@!170224964429938689>': '@w4ri0ck',
+    '291599775936282624': '@agarbuzov ',
+    '299154812858269697': '@Tema_N7',
+    '289480655551856641': '@Gelbart',
+    '170224964429938689': '@w4ri0ck',
 }
