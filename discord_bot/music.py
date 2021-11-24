@@ -8,7 +8,6 @@ import youtube_dl
 from sqlalchemy import and_
 from datetime import timedelta
 from datetime import datetime
-from datetime import time
 from typing import Optional
 from loguru import logger
 from async_timeout import timeout
@@ -256,7 +255,7 @@ class MusicPlayer(commands.Cog):
             self.player.voice = self.voice_client
 
     @commands.command(name='add')
-    async def _add(self, ctx: commands.Context, playlist_name: str, track_url: str):
+    async def _add(self, ctx: commands.Context, playlist_name: str, *, track_url: str):
         with ctx.typing():
 
             playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
