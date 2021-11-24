@@ -1,16 +1,23 @@
 import asyncio
 import inflect
 import discord
-import datetime
 import settings
 import functools
 import youtube_dl
 
+from sqlalchemy import and_
+from datetime import timedelta
+from datetime import datetime
+from datetime import time
 from typing import Optional
 from loguru import logger
 from async_timeout import timeout
 from discord.ext import commands
 from utils import emoji
+
+from models import Track as Track_db
+from models import Playlist
+from models import session
 
 ytdl = youtube_dl.YoutubeDL(settings.YTDL_OPTIONS)
 
@@ -65,40 +72,18 @@ class MusicPlayer(commands.Cog):
         """
         Play youtube track
         """
-        with ctx.typing():
+        await self.prepare_voice_client(ctx)
 
-            if not query:
-                return await ctx.channel.send(f'{emoji.failure} **No data passed**', delete_after=5)
+        if not query:
+            return await ctx.channel.send(f'{emoji.failure} **No data passed**', delete_after=5)
 
-            if not self.voice_client:
-                # if not connected to some guild channel -> connect to author voice channel
-                author_voice_state = ctx.author.voice
+        result = await self.search(query)
 
-                if not author_voice_state:
-                    # if user not connected to some voice channel
-                    return await ctx.channel.send(f'{emoji.failure} '
-                                                  f'**You are not connected to any voice channel on guild**',
-                                                  delete_after=5)
+        track = Track(result['webpage_url'], result['title'], result['duration'])
 
-                self.voice_client = await author_voice_state.channel.connect()
-
-            elif self.voice_client and self.voice_client.channel.id != ctx.author.voice.channel.id:
-                # if user in another voice channel -> move to him voice channel
-                await self.voice_client.move_to(ctx.author.voice.channel)
-
-            result = await self.search(query)
-
-            if not self.player:
-                self.player = Player(ctx, self.bot)
-                self.players[ctx.guild.id] = self.player
-
-            self.player.voice = self.voice_client
-
-            track = Track(result['webpage_url'], result['title'], result['duration'])
-
-            await self.player.queue.put(track)
-            await ctx.message.delete(delay=5)
-            await self.send_embed(ctx, query, result['title'], self.voice_client)
+        await self.player.queue.put(track)
+        await ctx.message.delete(delay=5)
+        await self.send_embed(ctx, query, result['title'], self.voice_client)
 
     @commands.command(name="pause", aliases=['p'])
     @validation
@@ -244,6 +229,125 @@ class MusicPlayer(commands.Cog):
                       f'`{query}`\n**Playing** {emoji.notes} `{result}`'
         await ctx.send(message, delete_after=5)
 
+    async def prepare_voice_client(self, ctx: commands.Context):
+
+        with ctx.typing():
+
+            if not self.voice_client:
+                # if not connected to some guild channel -> connect to author voice channel
+                author_voice_state = ctx.author.voice
+
+                if not author_voice_state:
+                    # if user not connected to some voice channel
+                    return await ctx.channel.send(f'{emoji.failure} '
+                                                  f'**You are not connected to any voice channel on guild**',
+                                                  delete_after=5)
+
+                self.voice_client = await author_voice_state.channel.connect()
+
+            elif self.voice_client and self.voice_client.channel.id != ctx.author.voice.channel.id:
+                # if user in another voice channel -> move to him voice channel
+                await self.voice_client.move_to(ctx.author.voice.channel)
+
+            if not self.player:
+                self.player = Player(ctx, self.bot)
+                self.players[ctx.guild.id] = self.player
+
+            self.player.voice = self.voice_client
+
+    @commands.command(name='add')
+    async def _add(self, ctx: commands.Context, playlist_name: str, track_url: str):
+        with ctx.typing():
+
+            playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
+                                                           Playlist.guild_id == ctx.guild.id)).first()
+            user = ctx.message.author.name
+
+            if not playlist:
+                playlist = Playlist(name=playlist_name.capitalize(), guild_id=ctx.guild.id, creator=user)
+                session.add(playlist)
+
+            result = await self.search(track_url)
+
+            track = Track_db(url=result['webpage_url'], name=result['title'], playlist=playlist,
+                             duration=result['duration'], creator=user)
+            duration = (datetime.min + timedelta(seconds=result["duration"])).time()
+            session.add(track)
+            session.commit()
+
+            await ctx.message.delete(delay=10)
+            return await ctx.channel.send(f'{emoji.success} '
+                                          f'`{result["title"]} {str(duration)}` successfully added to'
+                                          f' **{playlist_name.capitalize()}** playlist',
+                                          delete_after=10)
+
+    @commands.command(name='delete')
+    async def _delete(self, ctx: commands.Context, playlist_name: str, track_id: int = None):
+        playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
+                                                       Playlist.guild_id == ctx.guild.id)).first()
+
+        if not playlist:
+            message = f'{emoji.failure} Playlist with such name is not exist'
+        elif playlist and not track_id:
+            session.delete(playlist)
+            message = f'{emoji.success} Playlist **{playlist.name}** was successfully deleted'
+        elif playlist and track_id:
+            track = session.query(Track_db).get(track_id)
+            session.delete(track)
+            message = f'{emoji.success} `{track.name}` was successfully removed from ' \
+                      f'**{playlist.name}** playlist'
+
+        session.commit()
+        await ctx.message.delete(delay=10)
+        return await ctx.channel.send(message, delete_after=10)
+
+    @commands.command(name='playlist')
+    async def _playlist(self, ctx: commands.Context, playlist_name: str):
+        await self.prepare_voice_client(ctx)
+
+        playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
+                                                       Playlist.guild_id == ctx.guild.id)).first()
+
+        for track in playlist.tracks:
+            await self.player.queue.put(Track(title=track.name, webpage_url=track.url, duration=track.duration))
+
+        await ctx.message.delete(delay=5)
+        return await ctx.channel.send(f'Tracks from {playlist.name} playlist added to queue', delete_after=5)
+
+    @commands.command(name='showlist')
+    async def _showlist(self, ctx: commands.Context, playlist_name: str):
+        playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
+                                                       Playlist.guild_id == ctx.guild.id)).first()
+
+        if playlist:
+            result = ''
+            for i, track in enumerate(playlist.tracks):
+                duration = (datetime.min + timedelta(seconds=track.duration)).time()
+                result += f'{i + 1}.{track.name} `{track.creator}` {str(duration)} **{track.id}**\n'
+
+            embed = discord.Embed(title=f'{emoji.notes} {playlist.name}', description=f'{result}')
+            return await ctx.send(embed=embed)
+        else:
+            return await ctx.channel.send(f'{emoji.failure} '
+                                          f'Playlist with such name is not exist', delete_after=10)
+
+    @commands.command(name='showlists')
+    async def _showlists(self, ctx: commands.Context):
+        playlists = session.query(Playlist).filter(Playlist.guild_id == ctx.guild.id).all()
+
+        total_duration = int()
+        result = ''
+        for i, playlist in enumerate(playlists):
+            for track in playlist.tracks:
+                total_duration += track.duration
+            duration = (datetime.min + timedelta(seconds=total_duration)).time()
+            result += f'{i + 1}.{playlist.name} `{playlist.creator}` {str(duration)}\n'
+
+        #TODO add total duration
+
+        embed = discord.Embed(title=f'{emoji.notes} Playlists', description=f'{result}')
+        await ctx.send(embed=embed)
+
 
 class Player:
 
@@ -349,7 +453,7 @@ class Track:
     def __init__(self, webpage_url: str, title: str, duration: int):
         self.webpage_url = webpage_url
         self.title = title
-        self.duration = str(datetime.timedelta(seconds=duration))
+        self.duration = str(timedelta(seconds=duration))
 
     async def create_source(self, loop):
         partial = functools.partial(ytdl.extract_info, self.webpage_url, download=False)
