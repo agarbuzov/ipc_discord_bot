@@ -256,6 +256,9 @@ class MusicPlayer(commands.Cog):
 
     @commands.command(name='add')
     async def _add(self, ctx: commands.Context, playlist_name: str, *, track_url: str):
+        """
+        Add track to playlist
+        """
         with ctx.typing():
 
             playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
@@ -282,6 +285,9 @@ class MusicPlayer(commands.Cog):
 
     @commands.command(name='delete')
     async def _delete(self, ctx: commands.Context, playlist_name: str, track_id: int = None):
+        """
+        Delete playlist or remove track from it
+        """
         playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
                                                        Playlist.guild_id == ctx.guild.id)).first()
 
@@ -302,6 +308,9 @@ class MusicPlayer(commands.Cog):
 
     @commands.command(name='playlist')
     async def _playlist(self, ctx: commands.Context, playlist_name: str):
+        """
+        Add to queue playlist
+        """
         await self.prepare_voice_client(ctx)
 
         playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
@@ -315,6 +324,9 @@ class MusicPlayer(commands.Cog):
 
     @commands.command(name='showlist')
     async def _showlist(self, ctx: commands.Context, playlist_name: str):
+        """
+        Show tracks in playlist
+        """
         playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
                                                        Playlist.guild_id == ctx.guild.id)).first()
 
@@ -332,6 +344,9 @@ class MusicPlayer(commands.Cog):
 
     @commands.command(name='showlists')
     async def _showlists(self, ctx: commands.Context):
+        """
+        Show guild playlists
+        """
         playlists = session.query(Playlist).filter(Playlist.guild_id == ctx.guild.id).all()
 
         total_duration = int()
@@ -341,8 +356,6 @@ class MusicPlayer(commands.Cog):
                 total_duration += track.duration
             duration = (datetime.min + timedelta(seconds=total_duration)).time()
             result += f'{i + 1}.{playlist.name} `{playlist.creator}` {str(duration)}\n'
-
-        #TODO add total duration
 
         embed = discord.Embed(title=f'{emoji.notes} Playlists', description=f'{result}')
         await ctx.send(embed=embed)
