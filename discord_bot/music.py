@@ -23,13 +23,13 @@ ytdl = youtube_dl.YoutubeDL(settings.YTDL_OPTIONS)
 
 def validation(func):
 
-    async def wrapper(self, ctx):
+    async def wrapper(self, ctx, *args, **kwargs):
 
         if not self.voice_client:
             return await ctx.send(f'{emoji.failure} **Bot is not connected to any voice channel on guild**',
                                   delete_after=5)
 
-        return await func(self, ctx)
+        return await func(self, ctx, *args, **kwargs)
     return wrapper
 
 
@@ -316,11 +316,17 @@ class MusicPlayer(commands.Cog):
         playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
                                                        Playlist.guild_id == ctx.guild.id)).first()
 
+        if not playlist:
+            return await ctx.channel.send(f'{emoji.failure} '
+                                          f'Playlist with such name is not exist', delete_after=10)
+
         for track in playlist.tracks:
             await self.player.queue.put(Track(title=track.name, webpage_url=track.url, duration=track.duration))
 
         await ctx.message.delete(delay=5)
-        return await ctx.channel.send(f'Tracks from {playlist.name} playlist added to queue', delete_after=5)
+        return await ctx.channel.send(f'{emoji.success} '
+                                      f'Tracks from **{playlist.name}** playlist added to queue',
+                                      delete_after=5)
 
     @commands.command(name='showlist')
     async def _showlist(self, ctx: commands.Context, playlist_name: str):
@@ -330,17 +336,17 @@ class MusicPlayer(commands.Cog):
         playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
                                                        Playlist.guild_id == ctx.guild.id)).first()
 
-        if playlist:
-            result = ''
-            for i, track in enumerate(playlist.tracks):
-                duration = (datetime.min + timedelta(seconds=track.duration)).time()
-                result += f'{i + 1}.{track.name} `{track.creator}` {str(duration)} **{track.id}**\n'
-
-            embed = discord.Embed(title=f'{emoji.notes} {playlist.name}', description=f'{result}')
-            return await ctx.send(embed=embed)
-        else:
+        if not playlist:
             return await ctx.channel.send(f'{emoji.failure} '
                                           f'Playlist with such name is not exist', delete_after=10)
+
+        result = ''
+        for i, track in enumerate(playlist.tracks):
+            duration = (datetime.min + timedelta(seconds=track.duration)).time()
+            result += f'{i + 1}.{track.name} `{track.creator}` {str(duration)} **{track.id}**\n'
+
+        embed = discord.Embed(title=f'{emoji.notes} {playlist.name}', description=f'{result}')
+        return await ctx.send(embed=embed)
 
     @commands.command(name='showlists')
     async def _showlists(self, ctx: commands.Context):
