@@ -4,8 +4,11 @@ import discord
 import settings
 import functools
 import youtube_dl
+import traceback
+import sys
 
 from sqlalchemy import and_
+from sqlalchemy import or_
 from datetime import timedelta
 from datetime import datetime
 from typing import Optional
@@ -42,10 +45,17 @@ class MusicPlayer(commands.Cog):
         self.voice_client: Optional[discord.VoiceClient] = None
 
     async def cog_before_invoke(self, ctx: commands.Context):
-
         self.player: Player = self.players.get(ctx.guild.id)
-
         self.voice_client: discord.VoiceProtocol = ctx.guild.voice_client
+
+    @commands.Cog.listener()
+    @logger.catch
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.MissingAnyRole):
+            await ctx.send(f"{emoji.failure} You haven't Dj role", delete_after=5)
+        else:
+            print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
+            traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -66,6 +76,7 @@ class MusicPlayer(commands.Cog):
                     await self.player.stop()
 
     @commands.command(name="play")
+    @commands.has_any_role('Dj')
     @logger.catch
     async def _play(self, ctx: commands.Context, *, query: str):
         """
@@ -85,6 +96,7 @@ class MusicPlayer(commands.Cog):
         await self.send_embed(ctx, query, result['title'], self.voice_client)
 
     @commands.command(name="pause", aliases=['p'])
+    @commands.has_any_role('Dj')
     @validation
     async def _pause(self, ctx: commands.Context):
         """
@@ -97,6 +109,7 @@ class MusicPlayer(commands.Cog):
         await ctx.send(f'{emoji.pause_button} **Paused**', delete_after=5)
 
     @commands.command(name="resume", aliases=['r'])
+    @commands.has_any_role('Dj')
     @validation
     async def _resume(self, ctx: commands.Context):
         """
@@ -109,6 +122,7 @@ class MusicPlayer(commands.Cog):
         await ctx.send(f'{emoji.pause_button} **Resumed**', delete_after=5)
 
     @commands.command(name="stop", aliases=['s'])
+    @commands.has_any_role('Dj')
     @validation
     async def _stop(self, ctx: commands.Context):
         """
@@ -142,6 +156,7 @@ class MusicPlayer(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name="next", aliases=['skip', 'nx', 'sk'])
+    @commands.has_any_role('Dj')
     @validation
     async def _next(self, ctx: commands.Context):
         """
@@ -158,6 +173,7 @@ class MusicPlayer(commands.Cog):
             await ctx.send(f'{emoji.youtube_icon} **Playing** `{self.player.current.title}`', delete_after=5)
 
     @commands.command(name="now")
+    @commands.has_any_role('Dj')
     async def _now(self, ctx: commands.Context):
         """
         Get current track
@@ -168,6 +184,7 @@ class MusicPlayer(commands.Cog):
         await ctx.send(f'{emoji.play_pause} `{self.player.current.title}` **is playing now**', delete_after=5)
 
     @commands.command(name='remove', aliases=['rm'])
+    @commands.has_any_role('Dj')
     async def _remove(self, ctx: commands.Context, index: int):
         """
         Remove track from queue by index
@@ -179,6 +196,7 @@ class MusicPlayer(commands.Cog):
         await ctx.send(f'{emoji.success} `{self.player.queue[index - 1].title}` **removed from queue**', delete_after=5)
 
     @commands.command(name='clear', aliases=['cl'])
+    @commands.has_any_role('Dj')
     async def _clear(self, ctx: commands.Context):
         """
         Clear the queue
@@ -191,6 +209,7 @@ class MusicPlayer(commands.Cog):
         await ctx.send(f'{emoji.success} **Queue has been cleared**', delete_after=5)
 
     @commands.command(name="loop", aliases=['l', 'repeat', 'rp'])
+    @commands.has_any_role('Dj')
     async def _loop(self, ctx: commands.Context):
         """
         Loop current track
@@ -254,22 +273,30 @@ class MusicPlayer(commands.Cog):
 
             self.player.voice = self.voice_client
 
+    @staticmethod
+    async def get_playlist(ctx: commands.Context, playlist_name: str) -> Playlist:
+        playlist = session.query(Playlist).filter(
+            and_(or_(Playlist.name == playlist_name.capitalize(), Playlist.id == playlist_name),
+                 Playlist.guild_id == ctx.guild.id)).first()
+        return playlist
+
     @commands.command(name='add')
-    async def _add(self, ctx: commands.Context, playlist_name: str, *, track_url: str):
+    @commands.has_any_role('Dj')
+    async def _add(self, ctx: commands.Context, playlist_name: str, *, track: str):
         """
         Add track to playlist
         """
         with ctx.typing():
 
-            playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
-                                                           Playlist.guild_id == ctx.guild.id)).first()
+            playlist = await self.get_playlist(ctx, playlist_name)
+
             user = ctx.message.author.name
 
             if not playlist:
                 playlist = Playlist(name=playlist_name.capitalize(), guild_id=ctx.guild.id, creator=user)
                 session.add(playlist)
 
-            result = await self.search(track_url)
+            result = await self.search(track)
 
             track = Track_db(url=result['webpage_url'], name=result['title'], playlist=playlist,
                              duration=result['duration'], creator=user)
@@ -283,13 +310,13 @@ class MusicPlayer(commands.Cog):
                                           f' **{playlist_name.capitalize()}** playlist',
                                           delete_after=10)
 
-    @commands.command(name='delete')
+    @commands.command(name='delete', usage='<playlist id or name> <track id or None>')
+    @commands.has_any_role('Dj')
     async def _delete(self, ctx: commands.Context, playlist_name: str, track_id: int = None):
         """
         Delete playlist or remove track from it
         """
-        playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
-                                                       Playlist.guild_id == ctx.guild.id)).first()
+        playlist = await self.get_playlist(ctx, playlist_name)
 
         if not playlist:
             message = f'{emoji.failure} Playlist with such name is not exist'
@@ -306,15 +333,14 @@ class MusicPlayer(commands.Cog):
         await ctx.message.delete(delay=10)
         return await ctx.channel.send(message, delete_after=10)
 
-    @commands.command(name='playlist')
+    @commands.command(name='playlist', usage='<playlist id or name>')
     async def _playlist(self, ctx: commands.Context, playlist_name: str):
         """
         Add to queue playlist
         """
         await self.prepare_voice_client(ctx)
 
-        playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
-                                                       Playlist.guild_id == ctx.guild.id)).first()
+        playlist = await self.get_playlist(ctx, playlist_name)
 
         if not playlist:
             return await ctx.channel.send(f'{emoji.failure} '
@@ -328,22 +354,21 @@ class MusicPlayer(commands.Cog):
                                       f'Tracks from **{playlist.name}** playlist added to queue',
                                       delete_after=5)
 
-    @commands.command(name='showlist')
+    @commands.command(name='showlist', usage='<playlist id or name>')
     async def _showlist(self, ctx: commands.Context, playlist_name: str):
         """
         Show tracks in playlist
         """
-        playlist = session.query(Playlist).filter(and_(Playlist.name == playlist_name.capitalize(),
-                                                       Playlist.guild_id == ctx.guild.id)).first()
+        playlist = await self.get_playlist(ctx, playlist_name)
 
         if not playlist:
             return await ctx.channel.send(f'{emoji.failure} '
                                           f'Playlist with such name is not exist', delete_after=10)
 
         result = ''
-        for i, track in enumerate(playlist.tracks):
+        for track in playlist.tracks:
             duration = (datetime.min + timedelta(seconds=track.duration)).time()
-            result += f'{i + 1}.{track.name} `{track.creator}` {str(duration)} **{track.id}**\n'
+            result += f'{track.id}.{track.name} `{track.creator}` {str(duration)}\n'
 
         embed = discord.Embed(title=f'{emoji.notes} {playlist.name}', description=f'{result}')
         return await ctx.send(embed=embed)
@@ -357,11 +382,11 @@ class MusicPlayer(commands.Cog):
 
         total_duration = int()
         result = ''
-        for i, playlist in enumerate(playlists):
+        for playlist in playlists:
             for track in playlist.tracks:
                 total_duration += track.duration
             duration = (datetime.min + timedelta(seconds=total_duration)).time()
-            result += f'{i + 1}.{playlist.name} `{playlist.creator}` {str(duration)}\n'
+            result += f'{playlist.id}.{playlist.name} `{playlist.creator}` {str(duration)}\n'
 
         embed = discord.Embed(title=f'{emoji.notes} Playlists', description=f'{result}')
         await ctx.send(embed=embed)

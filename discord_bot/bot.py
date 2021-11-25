@@ -10,7 +10,7 @@ from music import MusicPlayer
 from notification import Notification
 
 bot = commands.Bot(command_prefix='!', intents=discord.Intents.all(), enable_debug_events=True)
-logger.add("discord_bot.log", rotation="50 MB", compression="zip", level="DEBUG")
+logger.add("../logs/discord_bot.log", rotation="50 MB", compression="zip", level="DEBUG")
 
 
 @bot.event
