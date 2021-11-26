@@ -8,7 +8,7 @@
   - > Now requesting stream link direct before start playing (should help with expiring stream link)
   - > Youtubedl cache set to False
 
-- [] Playlists 
+- [x] Playlists 
 
 - [] multi use command play from one user -> Nonetype search
 
@@ -26,3 +26,5 @@
   - > Will be refactoring in future
 
 - [] Recreate control panel message if not exist
+
+- [] Repeat all queue

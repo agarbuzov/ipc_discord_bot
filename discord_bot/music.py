@@ -133,7 +133,7 @@ class MusicPlayer(commands.Cog):
         if len(self.player.queue) > 0:
             self.player.queue.clear()
 
-        self.player.voice.stop()
+        await self.player.stop()
 
         await ctx.send(f'{emoji.stop_button} **Stopped**', delete_after=5)
 
@@ -406,6 +406,7 @@ class Player:
         self.main_loop = self.bot.loop.create_task(self.player_loop())
         self.check_voice_members = self.bot.loop.create_task(self.check_members_loop())
         self.message: Optional[discord.Message] = None
+        self.queue_loop: bool = False
 
     def __del__(self):
         self.main_loop.cancel()
@@ -429,7 +430,11 @@ class Player:
 
                 try:
                     async with timeout(180):
+
+                        if self.current and self.queue_loop:
+                            await self.queue.put(self.current)
                         self.current = await self.queue.get()
+
                 except asyncio.TimeoutError:
                     # Dont disconnect from channel when use loop, why ???
                     self.bot.loop.create_task(self.stop())
@@ -558,16 +563,27 @@ class PlayView(discord.ui.View):
             self.player.voice.stop()
 
     class Repeat(discord.ui.Button):
+        # TODO Refactoring this SHIT
         def __init__(self, player: Player):
             self.player = player
+            repeat_emoji = '🔁'
+            style = discord.ButtonStyle.primary
 
-            if not self.player.loop:
+            if not (self.player.loop or self.player.queue_loop):
                 style = discord.ButtonStyle.secondary
-            else:
-                style = discord.ButtonStyle.primary
+                self.loop = not self.player.loop
+                self.queue_loop = self.player.queue_loop
+            elif self.player.loop:
+                repeat_emoji = '🔂'
+                self.loop = not self.player.loop
+                self.queue_loop = not self.player.queue_loop
+            elif self.player.queue_loop:
+                self.loop = self.player.loop
+                self.queue_loop = not self.player.queue_loop
 
-            super().__init__(style=style, emoji=discord.PartialEmoji(name='🔁'))
+            super().__init__(style=style, emoji=discord.PartialEmoji(name=repeat_emoji))
 
         async def callback(self, interaction: discord.Interaction):
-            self.player.loop = not self.player.loop
+            self.player.loop = self.loop
+            self.player.queue_loop = self.queue_loop
             await interaction.response.edit_message(view=PlayView(self.player))
