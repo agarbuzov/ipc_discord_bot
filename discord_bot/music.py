@@ -1,29 +1,38 @@
 import asyncio
 import inflect
 import discord
-import datetime
 import settings
 import functools
 import youtube_dl
+import traceback
+import sys
 
+from sqlalchemy import and_
+from sqlalchemy import or_
+from datetime import timedelta
+from datetime import datetime
 from typing import Optional
 from loguru import logger
 from async_timeout import timeout
 from discord.ext import commands
 from utils import emoji
 
+from models import Track as Track_db
+from models import Playlist
+from models import session
+
 ytdl = youtube_dl.YoutubeDL(settings.YTDL_OPTIONS)
 
 
 def validation(func):
 
-    async def wrapper(self, ctx):
+    async def wrapper(self, ctx, *args, **kwargs):
 
         if not self.voice_client:
             return await ctx.send(f'{emoji.failure} **Bot is not connected to any voice channel on guild**',
                                   delete_after=5)
 
-        return await func(self, ctx)
+        return await func(self, ctx, *args, **kwargs)
     return wrapper
 
 
@@ -36,10 +45,17 @@ class MusicPlayer(commands.Cog):
         self.voice_client: Optional[discord.VoiceClient] = None
 
     async def cog_before_invoke(self, ctx: commands.Context):
-
         self.player: Player = self.players.get(ctx.guild.id)
-
         self.voice_client: discord.VoiceProtocol = ctx.guild.voice_client
+
+    @commands.Cog.listener()
+    @logger.catch
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.MissingAnyRole):
+            await ctx.send(f"{emoji.failure} You haven't Dj role", delete_after=5)
+        else:
+            print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
+            traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -60,47 +76,27 @@ class MusicPlayer(commands.Cog):
                     await self.player.stop()
 
     @commands.command(name="play")
+    @commands.has_any_role('Dj')
     @logger.catch
     async def _play(self, ctx: commands.Context, *, query: str):
         """
         Play youtube track
         """
-        with ctx.typing():
+        await self.prepare_voice_client(ctx)
 
-            if not query:
-                return await ctx.channel.send(f'{emoji.failure} **No data passed**', delete_after=5)
+        if not query:
+            return await ctx.channel.send(f'{emoji.failure} **No data passed**', delete_after=5)
 
-            if not self.voice_client:
-                # if not connected to some guild channel -> connect to author voice channel
-                author_voice_state = ctx.author.voice
+        result = await self.search(query)
 
-                if not author_voice_state:
-                    # if user not connected to some voice channel
-                    return await ctx.channel.send(f'{emoji.failure} '
-                                                  f'**You are not connected to any voice channel on guild**',
-                                                  delete_after=5)
+        track = Track(result['webpage_url'], result['title'], result['duration'])
 
-                self.voice_client = await author_voice_state.channel.connect()
-
-            elif self.voice_client and self.voice_client.channel.id != ctx.author.voice.channel.id:
-                # if user in another voice channel -> move to him voice channel
-                await self.voice_client.move_to(ctx.author.voice.channel)
-
-            result = await self.search(query)
-
-            if not self.player:
-                self.player = Player(ctx, self.bot)
-                self.players[ctx.guild.id] = self.player
-
-            self.player.voice = self.voice_client
-
-            track = Track(result['webpage_url'], result['title'], result['duration'])
-
-            await self.player.queue.put(track)
-            await ctx.message.delete(delay=5)
-            await self.send_embed(ctx, query, result['title'], self.voice_client)
+        await self.player.queue.put(track)
+        await ctx.message.delete(delay=5)
+        await self.send_embed(ctx, query, result['title'], self.voice_client)
 
     @commands.command(name="pause", aliases=['p'])
+    @commands.has_any_role('Dj')
     @validation
     async def _pause(self, ctx: commands.Context):
         """
@@ -113,6 +109,7 @@ class MusicPlayer(commands.Cog):
         await ctx.send(f'{emoji.pause_button} **Paused**', delete_after=5)
 
     @commands.command(name="resume", aliases=['r'])
+    @commands.has_any_role('Dj')
     @validation
     async def _resume(self, ctx: commands.Context):
         """
@@ -125,6 +122,7 @@ class MusicPlayer(commands.Cog):
         await ctx.send(f'{emoji.pause_button} **Resumed**', delete_after=5)
 
     @commands.command(name="stop", aliases=['s'])
+    @commands.has_any_role('Dj')
     @validation
     async def _stop(self, ctx: commands.Context):
         """
@@ -135,7 +133,7 @@ class MusicPlayer(commands.Cog):
         if len(self.player.queue) > 0:
             self.player.queue.clear()
 
-        self.player.voice.stop()
+        await self.player.stop()
 
         await ctx.send(f'{emoji.stop_button} **Stopped**', delete_after=5)
 
@@ -158,6 +156,7 @@ class MusicPlayer(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name="next", aliases=['skip', 'nx', 'sk'])
+    @commands.has_any_role('Dj')
     @validation
     async def _next(self, ctx: commands.Context):
         """
@@ -174,6 +173,7 @@ class MusicPlayer(commands.Cog):
             await ctx.send(f'{emoji.youtube_icon} **Playing** `{self.player.current.title}`', delete_after=5)
 
     @commands.command(name="now")
+    @commands.has_any_role('Dj')
     async def _now(self, ctx: commands.Context):
         """
         Get current track
@@ -184,6 +184,7 @@ class MusicPlayer(commands.Cog):
         await ctx.send(f'{emoji.play_pause} `{self.player.current.title}` **is playing now**', delete_after=5)
 
     @commands.command(name='remove', aliases=['rm'])
+    @commands.has_any_role('Dj')
     async def _remove(self, ctx: commands.Context, index: int):
         """
         Remove track from queue by index
@@ -195,6 +196,7 @@ class MusicPlayer(commands.Cog):
         await ctx.send(f'{emoji.success} `{self.player.queue[index - 1].title}` **removed from queue**', delete_after=5)
 
     @commands.command(name='clear', aliases=['cl'])
+    @commands.has_any_role('Dj')
     async def _clear(self, ctx: commands.Context):
         """
         Clear the queue
@@ -207,6 +209,7 @@ class MusicPlayer(commands.Cog):
         await ctx.send(f'{emoji.success} **Queue has been cleared**', delete_after=5)
 
     @commands.command(name="loop", aliases=['l', 'repeat', 'rp'])
+    @commands.has_any_role('Dj')
     async def _loop(self, ctx: commands.Context):
         """
         Loop current track
@@ -244,6 +247,150 @@ class MusicPlayer(commands.Cog):
                       f'`{query}`\n**Playing** {emoji.notes} `{result}`'
         await ctx.send(message, delete_after=5)
 
+    async def prepare_voice_client(self, ctx: commands.Context):
+
+        with ctx.typing():
+
+            if not self.voice_client:
+                # if not connected to some guild channel -> connect to author voice channel
+                author_voice_state = ctx.author.voice
+
+                if not author_voice_state:
+                    # if user not connected to some voice channel
+                    return await ctx.channel.send(f'{emoji.failure} '
+                                                  f'**You are not connected to any voice channel on guild**',
+                                                  delete_after=5)
+
+                self.voice_client = await author_voice_state.channel.connect()
+
+            elif self.voice_client and self.voice_client.channel.id != ctx.author.voice.channel.id:
+                # if user in another voice channel -> move to him voice channel
+                await self.voice_client.move_to(ctx.author.voice.channel)
+
+            if not self.player:
+                self.player = Player(ctx, self.bot)
+                self.players[ctx.guild.id] = self.player
+
+            self.player.voice = self.voice_client
+
+    @staticmethod
+    async def get_playlist(ctx: commands.Context, playlist_name: str) -> Playlist:
+        playlist = session.query(Playlist).filter(
+            and_(or_(Playlist.name == playlist_name.capitalize(), Playlist.id == playlist_name),
+                 Playlist.guild_id == ctx.guild.id)).first()
+        return playlist
+
+    @commands.command(name='add')
+    @commands.has_any_role('Dj')
+    async def _add(self, ctx: commands.Context, playlist_name: str, *, track: str):
+        """
+        Add track to playlist
+        """
+        with ctx.typing():
+
+            playlist = await self.get_playlist(ctx, playlist_name)
+
+            user = ctx.message.author.name
+
+            if not playlist:
+                playlist = Playlist(name=playlist_name.capitalize(), guild_id=ctx.guild.id, creator=user)
+                session.add(playlist)
+
+            result = await self.search(track)
+
+            track = Track_db(url=result['webpage_url'], name=result['title'], playlist=playlist,
+                             duration=result['duration'], creator=user)
+            duration = (datetime.min + timedelta(seconds=result["duration"])).time()
+            session.add(track)
+            session.commit()
+
+            await ctx.message.delete(delay=10)
+            return await ctx.channel.send(f'{emoji.success} '
+                                          f'`{result["title"]} {str(duration)}` successfully added to'
+                                          f' **{playlist_name.capitalize()}** playlist',
+                                          delete_after=10)
+
+    @commands.command(name='delete', usage='<playlist id or name> <track id or None>')
+    @commands.has_any_role('Dj')
+    async def _delete(self, ctx: commands.Context, playlist_name: str, track_id: int = None):
+        """
+        Delete playlist or remove track from it
+        """
+        playlist = await self.get_playlist(ctx, playlist_name)
+
+        if not playlist:
+            message = f'{emoji.failure} Playlist with such name is not exist'
+        elif playlist and not track_id:
+            session.delete(playlist)
+            message = f'{emoji.success} Playlist **{playlist.name}** was successfully deleted'
+        elif playlist and track_id:
+            track = session.query(Track_db).get(track_id)
+            session.delete(track)
+            message = f'{emoji.success} `{track.name}` was successfully removed from ' \
+                      f'**{playlist.name}** playlist'
+
+        session.commit()
+        await ctx.message.delete(delay=10)
+        return await ctx.channel.send(message, delete_after=10)
+
+    @commands.command(name='playlist', usage='<playlist id or name>')
+    async def _playlist(self, ctx: commands.Context, playlist_name: str):
+        """
+        Add to queue playlist
+        """
+        await self.prepare_voice_client(ctx)
+
+        playlist = await self.get_playlist(ctx, playlist_name)
+
+        if not playlist:
+            return await ctx.channel.send(f'{emoji.failure} '
+                                          f'Playlist with such name is not exist', delete_after=10)
+
+        for track in playlist.tracks:
+            await self.player.queue.put(Track(title=track.name, webpage_url=track.url, duration=track.duration))
+
+        await ctx.message.delete(delay=5)
+        return await ctx.channel.send(f'{emoji.success} '
+                                      f'Tracks from **{playlist.name}** playlist added to queue',
+                                      delete_after=5)
+
+    @commands.command(name='showlist', usage='<playlist id or name>')
+    async def _showlist(self, ctx: commands.Context, playlist_name: str):
+        """
+        Show tracks in playlist
+        """
+        playlist = await self.get_playlist(ctx, playlist_name)
+
+        if not playlist:
+            return await ctx.channel.send(f'{emoji.failure} '
+                                          f'Playlist with such name is not exist', delete_after=10)
+
+        result = ''
+        for track in playlist.tracks:
+            duration = (datetime.min + timedelta(seconds=track.duration)).time()
+            result += f'{track.id}.{track.name} `{track.creator}` {str(duration)}\n'
+
+        embed = discord.Embed(title=f'{emoji.notes} {playlist.name}', description=f'{result}')
+        return await ctx.send(embed=embed)
+
+    @commands.command(name='showlists')
+    async def _showlists(self, ctx: commands.Context):
+        """
+        Show guild playlists
+        """
+        playlists = session.query(Playlist).filter(Playlist.guild_id == ctx.guild.id).all()
+
+        result = ''
+        for playlist in playlists:
+            total_duration = int()
+            for track in playlist.tracks:
+                total_duration += track.duration
+            duration = (datetime.min + timedelta(seconds=total_duration)).time()
+            result += f'{playlist.id}.{playlist.name} `{playlist.creator}` {str(duration)}\n'
+
+        embed = discord.Embed(title=f'{emoji.notes} Playlists', description=f'{result}')
+        await ctx.send(embed=embed)
+
 
 class Player:
 
@@ -259,6 +406,7 @@ class Player:
         self.main_loop = self.bot.loop.create_task(self.player_loop())
         self.check_voice_members = self.bot.loop.create_task(self.check_members_loop())
         self.message: Optional[discord.Message] = None
+        self.queue_loop: bool = False
 
     def __del__(self):
         self.main_loop.cancel()
@@ -282,7 +430,11 @@ class Player:
 
                 try:
                     async with timeout(180):
+
+                        if self.current and self.queue_loop:
+                            await self.queue.put(self.current)
                         self.current = await self.queue.get()
+
                 except asyncio.TimeoutError:
                     # Dont disconnect from channel when use loop, why ???
                     self.bot.loop.create_task(self.stop())
@@ -349,7 +501,7 @@ class Track:
     def __init__(self, webpage_url: str, title: str, duration: int):
         self.webpage_url = webpage_url
         self.title = title
-        self.duration = str(datetime.timedelta(seconds=duration))
+        self.duration = str(timedelta(seconds=duration))
 
     async def create_source(self, loop):
         partial = functools.partial(ytdl.extract_info, self.webpage_url, download=False)
@@ -411,16 +563,27 @@ class PlayView(discord.ui.View):
             self.player.voice.stop()
 
     class Repeat(discord.ui.Button):
+        # TODO Refactoring this SHIT
         def __init__(self, player: Player):
             self.player = player
+            repeat_emoji = '🔁'
+            style = discord.ButtonStyle.primary
 
-            if not self.player.loop:
+            if not (self.player.loop or self.player.queue_loop):
                 style = discord.ButtonStyle.secondary
-            else:
-                style = discord.ButtonStyle.primary
+                self.loop = not self.player.loop
+                self.queue_loop = self.player.queue_loop
+            elif self.player.loop:
+                repeat_emoji = '🔂'
+                self.loop = not self.player.loop
+                self.queue_loop = not self.player.queue_loop
+            elif self.player.queue_loop:
+                self.loop = self.player.loop
+                self.queue_loop = not self.player.queue_loop
 
-            super().__init__(style=style, emoji=discord.PartialEmoji(name='🔁'))
+            super().__init__(style=style, emoji=discord.PartialEmoji(name=repeat_emoji))
 
         async def callback(self, interaction: discord.Interaction):
-            self.player.loop = not self.player.loop
+            self.player.loop = self.loop
+            self.player.queue_loop = self.queue_loop
             await interaction.response.edit_message(view=PlayView(self.player))
