@@ -380,9 +380,9 @@ class MusicPlayer(commands.Cog):
         """
         playlists = session.query(Playlist).filter(Playlist.guild_id == ctx.guild.id).all()
 
-        total_duration = int()
         result = ''
         for playlist in playlists:
+            total_duration = int()
             for track in playlist.tracks:
                 total_duration += track.duration
             duration = (datetime.min + timedelta(seconds=total_duration)).time()
