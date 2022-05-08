@@ -282,7 +282,7 @@ class MusicPlayer(commands.Cog):
 
     @commands.command(name='add')
     @commands.has_any_role('Dj')
-    async def _add(self, ctx: commands.Context, playlist_name: str, *, track: str):
+    async def _add(self, ctx: commands.Context, playlist_name: str, *, track: Optional[str] = None):
         """
         Add track to playlist
         """
@@ -296,7 +296,10 @@ class MusicPlayer(commands.Cog):
                 playlist = Playlist(name=playlist_name.capitalize(), guild_id=ctx.guild.id, creator=user)
                 session.add(playlist)
 
-            result = await self.search(track)
+            if not track and self.player.voice.is_playing():
+                result = self.player.current
+            else:
+                result = await self.search(track)
 
             track = Track_db(url=result['webpage_url'], name=result['title'], playlist=playlist,
                              duration=result['duration'], creator=user)
@@ -484,7 +487,8 @@ class Player:
     async def stop(self):
         self.queue.clear()
 
-        self.message = await self.message.delete()
+        if self.message:
+            self.message = await self.message.delete()
 
         if self.voice:
             await self.voice.disconnect()
@@ -499,15 +503,30 @@ class Player:
 class Track:
 
     def __init__(self, webpage_url: str, title: str, duration: int):
-        self.webpage_url = webpage_url
-        self.title = title
-        self.duration = str(timedelta(seconds=duration))
+        self._webpage_url = webpage_url
+        self._title = title
+        self._duration = duration
+
+    @property
+    def title(self):
+        return self._title
+
+    @property
+    def webpage_url(self):
+        return self._webpage_url
+
+    @property
+    def duration(self):
+        return str(timedelta(seconds=self._duration))
 
     async def create_source(self, loop):
         partial = functools.partial(ytdl.extract_info, self.webpage_url, download=False)
         result = await loop.run_in_executor(None, partial)
 
         return discord.FFmpegPCMAudio(result['url'], **settings.FFMPEG_OPTIONS)
+
+    def __getitem__(self, item):
+        return getattr(self, '_'+item)
 
 
 class TrackQueue(asyncio.Queue):
