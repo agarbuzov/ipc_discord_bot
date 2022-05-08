@@ -487,7 +487,8 @@ class Player:
     async def stop(self):
         self.queue.clear()
 
-        self.message = await self.message.delete()
+        if self.message:
+            self.message = await self.message.delete()
 
         if self.voice:
             await self.voice.disconnect()
