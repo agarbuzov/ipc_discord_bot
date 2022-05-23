@@ -189,16 +189,17 @@ fill:  #ced4da;
 }
 
 .discord_wrapper {
-    width: 300px;
+    width: auto;
     background: linear-gradient(to left, #334257, #476072);
     height: 100%;
     display: flex;
     align-items: center;
-    justify-content: end;
+    justify-content: center;
 }
 
 .discord_wrapper span {
     font-size: 20px;
+    font-weight: bold;
     color: white;
 }
 
@@ -218,4 +219,12 @@ fill:  #ced4da;
 	width: 60px;
 	border-radius: 50%;
 	object-fit: obtain;
+}
+
+.discord-separator {
+    border: 1px solid #99aab5;
+    width: 2px;
+    border-radius: 30%;
+    height: 70%;
+    margin-right: 15px;
 }
