@@ -12,7 +12,7 @@
 
         <a class="btn btn-secondary btn-lg btn-block d-flex align-items-center gap-3 mx-4"
            style="background-color: #99aab5; transition: none; width: auto;"
-           href="https://discord.com/api/oauth2/authorize?client_id=903213104874287164&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fauth%2F&response_type=code&scope=identify%20guilds"
+           href="https://discord.com/api/oauth2/authorize?client_id=903213104874287164&redirect_uri=http%3A%2F%2Fec2-3-94-111-95.compute-1.amazonaws.com%2Fauth%2F&response_type=code&scope=identify%20guilds"
            role="button">
             <svg width="30px" height="30px" viewBox="0 -28.5 256 256" version="1.1" xmlns="http://www.w3.org/2000/svg"
                  xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMidYMid">
@@ -39,7 +39,7 @@
                 </g>
             </svg>{{ request.state.session.user.username }}#{{ request.state.session.user.discriminator }}</span>
         <div class="user_avatar_wrapper">
-            <img src="{{ request.state.user_icon }}" class="user_avatar">
+            <img class="user_avatar" alt="avatar" src="{% if request.state.user_icon %}{{ request.state.user_icon }}{% else %}{{ url_for('static', path='images/default_avatar.jpg') }}{% endif %}">
         </div>
 
         {% endif %}

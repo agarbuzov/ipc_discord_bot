@@ -18,7 +18,7 @@ async def get_token(code):
         "client_id": settings.CLIENT_ID,
         "client_secret": settings.SECRET,
         "grant_type": "authorization_code",
-        "redirect_uri": "http://localhost:8000/auth/"
+        "redirect_uri": "http://ec2-3-94-111-95.compute-1.amazonaws.com/auth/"
     }
     headers = {
         "Content-Type": "application/x-www-form-urlencoded"

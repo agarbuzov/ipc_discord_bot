@@ -67,6 +67,7 @@ async def set_user(request: Request, call_next):
     if token := request.cookies.get('session'):
         user_session = await get_current_user(token)
         request.state.session = user_session
-        request.state.user_icon = await get_user_icon(user_session.user.id)
+        if user_session.user.avatar:
+            request.state.user_icon = await get_user_icon(user_session.user.id)
     response = await call_next(request)
     return response
