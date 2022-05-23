@@ -1,5 +1,5 @@
 body {
-	-webkit-touch-callout: none;
+  -webkit-touch-callout: none;
   -webkit-user-select: none;   
   -khtml-user-select: none;    
   -moz-user-select: none;     
@@ -23,7 +23,8 @@ a:hover {
 	left: 0;
 	background-color: #334257; 
 	overflow-x: hidden; 
-	transition: 0.5s linear; 
+	transition: 0.5s linear;
+	opacity: 0.9;
 }
 .sidenav a {
 	text-decoration: none;
@@ -43,7 +44,6 @@ a:hover {
 	display: flex;
 	align-items: center;
 	gap: 20px;
-	border-bottom: 2px solid #476072;
 	margin-bottom: 150px;
 }
 .logo_wrapper span {
@@ -97,7 +97,7 @@ a:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 0 0 20px;
 }
 
 .topnav svg {
@@ -188,5 +188,34 @@ fill:  #ced4da;
 	cursor: pointer;
 }
 
+.discord_wrapper {
+    width: 300px;
+    background: linear-gradient(to left, #334257, #476072);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: end;
+}
 
- 
+.discord_wrapper span {
+    font-size: 20px;
+    color: white;
+}
+
+.search_and_play_wrapper {
+    background: linear-gradient(to right, #334257, #476072);
+    height: 100%;
+}
+
+.user_avatar_wrapper {
+	display: flex;
+	align-items: center;
+	padding: 0 10px;
+}
+
+.user_avatar_wrapper .user_avatar {
+	height: 60px;
+	width: 60px;
+	border-radius: 50%;
+	object-fit: obtain;
+}
