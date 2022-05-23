@@ -228,3 +228,7 @@ fill:  #ced4da;
     height: 70%;
     margin-right: 15px;
 }
+
+.discord_wrapper svg {
+    padding: 0 3px 0 0;
+}
