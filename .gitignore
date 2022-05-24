@@ -56,7 +56,6 @@ coverage.xml
 
 # Django stuff:
 *.log
-local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
@@ -127,7 +126,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-discord_bot/local_settings.py
-discord_bot/cookies.txt
+logs
+local_settings.py
+cookies.txt
 .idea/
 *.db
