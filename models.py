@@ -1,7 +1,10 @@
+from sqlalchemy import Text
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
+from sqlalchemy import BigInteger
 from sqlalchemy import UniqueConstraint
 from sqlalchemy import create_engine
 
@@ -11,9 +14,26 @@ from sqlalchemy.orm import Session
 
 from sqlalchemy.ext.declarative import declarative_base
 
-engine = create_engine('sqlite:///playlists.db', echo=True)
+engine = create_engine('sqlite:///discord.db', echo=True)
 Base = declarative_base()
 session = Session(bind=engine)
+
+
+class User(Base):
+    __tablename__ = 'user'
+    id = Column(BigInteger, primary_key=True)
+    username = Column(String(255))
+    discriminator = Column(Integer)
+    avatar = Column(String)
+    avatar_decoration = Column(String)
+    locale = Column(String(2))
+
+
+class UserSession(Base):
+    __tablename__ = 'user_session'
+    session = Column(Text, primary_key=True)
+    user_id = Column(BigInteger, ForeignKey('user.id'))
+    user = relationship("User")
 
 
 class Playlist(Base):
@@ -34,3 +54,13 @@ class Track(Base):
     creator = Column(String)
     duration = Column(Integer)
     playlist_id = Column(Integer, ForeignKey("playlist.id"))
+
+
+class History(Base):
+    __tablename__ = 'history'
+    id = Column(Integer, primary_key=True)
+    track = Column(String)
+    type = Column(String)
+    date = Column(DateTime)
+    user_id = Column(BigInteger, ForeignKey('user.id'))
+    user = relationship("User")

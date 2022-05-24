@@ -15,7 +15,7 @@ from typing import Optional
 from loguru import logger
 from async_timeout import timeout
 from discord.ext import commands
-from utils import emoji
+from discord_bot.utils import emoji
 
 from models import Track as Track_db
 from models import Playlist

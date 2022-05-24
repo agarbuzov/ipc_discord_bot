@@ -6,10 +6,10 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from utils import get_token
-from utils import get_user
-from utils import get_current_user
-from utils import get_user_icon
+from front.utils import get_token
+from front.utils import get_user
+from front.utils import get_current_user
+from front.utils import get_user_icon
 
 from models import session
 from models import User
@@ -17,7 +17,7 @@ from models import UserSession
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="front/static"), name="static")
 
 templates = Jinja2Templates(directory="templates")
 
@@ -60,6 +60,14 @@ async def auth(code: str):
     response = RedirectResponse('/')
     response.set_cookie('session', token)
     return response
+
+
+# @app.get('/guilds/')
+# async def guilds():
+#     async with websockets.connect("ws://localhost:8765") as websocket:
+#         await websocket.send(json.dumps({"event": "get_guilds"}))
+#         result = dill.loads(await websocket.recv())
+#     return result
 
 
 @app.middleware("http")

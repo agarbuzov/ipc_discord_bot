@@ -3,12 +3,22 @@ FFMPEG_OPTIONS = {
     'options': '-vn',
 }
 
-bot_token = ''
-telegram_token = ''
-chat_id = ''
-yt_username = ''
-yt_password = ''
-yt_cookie_path = ''
+# Discord bot token
+BOT_TOKEN = ""
+
+# Telegram bot credentials
+TELEGRAM_TOKEN = ""
+CHAT_ID = ""
+
+# Google account credentials for youtube
+YT_USERNAME = ""
+YT_PASSWORD = ""
+YT_COOKIE_PATH = ""
+
+# Discord app tokens for front app
+CLIENT_ID = ""
+SECRET = ""
+
 
 try:
     from local_settings import *
@@ -30,12 +40,12 @@ YTDL_OPTIONS = {
     'cachedir': False,
     'default_search': 'auto',
     'source_address': '0.0.0.0',
-    'username': yt_username,
-    'password': yt_password,
-    'cookiefile': yt_cookie_path
+    'username': YT_USERNAME,
+    'password': YT_PASSWORD,
+    'cookiefile': YT_COOKIE_PATH
 }
 
-telegram_nick = {
+TELEGRAM_NICK = {
     '291599775936282624': '@agarbuzov ',
     '299154812858269697': '@Tema_N7',
     '289480655551856641': '@Gelbart',
