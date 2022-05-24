@@ -1,6 +1,6 @@
 import requests
 
-from front import settings
+import settings
 
 from models import session
 from models import User
