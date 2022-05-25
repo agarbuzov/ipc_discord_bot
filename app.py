@@ -30,7 +30,7 @@ async def index(request: Request):
 
 @app.get("/history/", response_class=HTMLResponse)
 async def history(request: Request):
-    history_ = session.query(History).limit(50).all()
+    history_ = session.query(History).limit(50).all().order_by(History.date.desc())
     return templates.TemplateResponse("history.html", {"request": request, "history": history_})
 
 
