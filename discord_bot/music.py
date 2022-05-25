@@ -19,6 +19,8 @@ from discord_bot.utils import emoji
 
 from models import Track as Track_db
 from models import Playlist
+from models import History
+from models import User
 from models import session
 
 ytdl = youtube_dl.YoutubeDL(settings.YTDL_OPTIONS)
@@ -92,6 +94,15 @@ class MusicPlayer(commands.Cog):
         track = Track(result['webpage_url'], result['title'], result['duration'])
 
         await self.player.queue.put(track)
+
+        user = ctx.message.author
+        user_ = session.query(User).get(user.id)
+        if not user_:
+            user_ = User(id=user.id, discriminator=user.discriminator, avatar=user.avatar.key, username=user.name)
+            session.add(user_)
+        record = History(type='Song', url=track.webpage_url, track=track.title, user_id=user.id)
+        session.add(record)
+        session.commit()
         await ctx.message.delete(delay=5)
         await self.send_embed(ctx, query, result['title'], self.voice_client)
 

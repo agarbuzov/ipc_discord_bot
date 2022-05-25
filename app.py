@@ -14,6 +14,7 @@ from front.utils import get_user_icon
 from models import session
 from models import User
 from models import UserSession
+from models import History
 
 app = FastAPI()
 
@@ -29,7 +30,8 @@ async def index(request: Request):
 
 @app.get("/history/", response_class=HTMLResponse)
 async def history(request: Request):
-    return templates.TemplateResponse("history.html", {"request": request})
+    history_ = session.query(History).limit(50).all()
+    return templates.TemplateResponse("history.html", {"request": request, "history": history_})
 
 
 @app.get("/playlists/", response_class=HTMLResponse)

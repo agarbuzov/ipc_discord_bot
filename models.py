@@ -12,6 +12,8 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.orm import backref
 from sqlalchemy.orm import Session
 
+from sqlalchemy.sql import func
+
 from sqlalchemy.ext.declarative import declarative_base
 
 engine = create_engine('sqlite:///discord.db', echo=True)
@@ -61,6 +63,7 @@ class History(Base):
     id = Column(Integer, primary_key=True)
     track = Column(String)
     type = Column(String)
-    date = Column(DateTime)
+    date = Column(DateTime(timezone=True), server_default=func.now())
+    url = Column(String)
     user_id = Column(BigInteger, ForeignKey('user.id'))
     user = relationship("User")
