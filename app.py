@@ -1,3 +1,6 @@
+import requests
+import settings
+
 from fastapi import FastAPI
 from fastapi import Request
 
@@ -62,6 +65,24 @@ async def auth(code: str):
     response = RedirectResponse('/')
     response.set_cookie('session', token)
     return response
+
+
+@app.get("/search/")
+async def search(query: str):
+    url = "https://youtube.googleapis.com/youtube/v3/search"
+    params = {
+        "key": settings.YT_API_KEY,
+        "q": query,
+        "maxResult": 5,
+        "part": "snippet",
+        "type": "video"
+    }
+    response = requests.get(url=url, params=params)
+    data = response.json()
+    print(data['items'][0]['id']['videoId'])
+    result = [{'id': result['id']['videoId'], 'icon': result['snippet']['thumbnails']['default']['url'],
+               'title': result['snippet']['title']} for result in data['items']]
+    return result
 
 
 # @app.get('/guilds/')

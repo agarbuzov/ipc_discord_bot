@@ -14,6 +14,7 @@ CHAT_ID = ""
 YT_USERNAME = ""
 YT_PASSWORD = ""
 YT_COOKIE_PATH = ""
+YT_API_KEY = ""
 
 # Discord app tokens for front app
 CLIENT_ID = ""

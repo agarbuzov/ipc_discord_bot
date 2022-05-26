@@ -26,6 +26,7 @@
 </body>
 </html>
 {% block scripts %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
     <script type="text/javascript">
         const navBar = document.getElementById("mySidenav");
         navBar.addEventListener('mouseover', () => {
@@ -43,6 +44,15 @@
         function closeNav() {
             document.getElementById("mySidenav").style.width = "0";
         }
+        $('#search').on('input', function (){
+            let query = $(this).val()
+            $.ajax({
+                url: '/search/',
+                data: {query: query}
+            }).done(function(responseData) {
+                console.log('Done: ', responseData);
+            })
+        })
 
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
