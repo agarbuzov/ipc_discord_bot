@@ -75,13 +75,19 @@ async def search(query: str):
         "q": query,
         "maxResult": 5,
         "part": "snippet",
-        "type": "video"
+        "type": "video",
+        "regionCode": "BY"
     }
     response = requests.get(url=url, params=params)
     data = response.json()
-    print(data['items'][0]['id']['videoId'])
-    result = [{'id': result['id']['videoId'], 'icon': result['snippet']['thumbnails']['default']['url'],
-               'title': result['snippet']['title']} for result in data['items']]
+    result = [
+        {
+            'url': f'https://www.youtube.com/watch?v={result["id"]["videoId"]}',
+            'icon': result['snippet']['thumbnails']['default']['url'],
+            'title': result['snippet']['title']
+        }
+        for result in data['items']
+    ]
     return result
 
 
