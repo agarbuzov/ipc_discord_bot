@@ -1,5 +1,9 @@
+import json
+
 import requests
 import settings
+import websockets
+import urllib.parse
 
 from fastapi import FastAPI
 from fastapi import Request
@@ -52,15 +56,19 @@ async def auth(code: str):
     authorization_data = await get_token(code)
     token_type = authorization_data.get('token_type')
     token = authorization_data.get('access_token')
+
     user_data = await get_user(token_type, token)
     user = session.query(User).get(user_data.get('id'))
     user_session = session.query(UserSession).get(token)
+
     if not user_session:
         user_session = UserSession(user_id=user_data.get('id'), session=token)
         session.add(user_session)
+
     if not user:
         user = User(**{k: v for k, v in user_data.items() if k in [column.name for column in User.__table__.columns]})
         session.add(user)
+
     session.commit()
     response = RedirectResponse('/')
     response.set_cookie('session', token)
@@ -91,6 +99,13 @@ async def search(query: str):
     return result
 
 
+@app.get("/play/")
+async def play(query: str, request: Request):
+    async with websockets.connect("ws://localhost:5001") as websocket:
+        await websocket.send(json.dumps({"e": "play", "d": {"user": request.state.session.user.id, "query": query}}))
+        response = json.loads(await websocket.recv())
+        return response
+
 # @app.get('/guilds/')
 # async def guilds():
 #     async with websockets.connect("ws://localhost:8765") as websocket:
@@ -106,5 +121,6 @@ async def set_user(request: Request, call_next):
         request.state.session = user_session
         if user_session.user.avatar:
             request.state.user_icon = await get_user_icon(user_session.user.id)
+    request.state.redirect_url = urllib.parse.quote(settings.REDIRECT_URL, safe='')
     response = await call_next(request)
     return response

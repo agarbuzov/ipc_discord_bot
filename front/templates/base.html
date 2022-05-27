@@ -52,17 +52,28 @@
         function closeNav() {
             document.getElementById("mySidenav").style.width = "0";
         }
-
-        $('#search').on('input', function (){
+        $(document).click(function(event) {
+            console.log($(event.target))
+        });
+        $('#search').on('input', function () {
             let query = $(this).val()
             if (query) {
                 clearTimeout(delayTimer)
-                delayTimer = setTimeout(function() {
+                delayTimer = setTimeout(function () {
                     $.ajax({
                         url: '/search/',
                         data: {query: query}
-                    }).done(function(response) {
-                        console.log('Done: ', response);
+                    }).done(function (response) {
+                        $('#search-result').empty()
+                        $.each(response, function (k, v) {
+                            let option = `<div data-url="${v.url}">${v.title}</div>`
+                            $(option).appendTo('#search-result').on('click', function () {
+                                $.ajax({
+                                    url: '/play/',
+                                    data: {query: this.dataset.url}
+                                })
+                            })
+                        })
                     })
                 }, 1000);
             }

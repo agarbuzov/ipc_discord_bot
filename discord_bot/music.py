@@ -84,7 +84,10 @@ class MusicPlayer(commands.Cog):
         """
         Play youtube track
         """
-        await self.prepare_voice_client(ctx)
+        channel = ctx.channel
+        author = ctx.author
+
+        await self.prepare_voice_client(channel, author)
 
         if not query:
             return await ctx.channel.send(f'{emoji.failure} **No data passed**', delete_after=5)
@@ -258,29 +261,29 @@ class MusicPlayer(commands.Cog):
                       f'`{query}`\n**Playing** {emoji.notes} `{result}`'
         await ctx.send(message, delete_after=5)
 
-    async def prepare_voice_client(self, ctx: commands.Context):
+    async def prepare_voice_client(self, channel: discord.TextChannel, author: discord.Member):
 
-        with ctx.typing():
+        with channel.typing():
 
             if not self.voice_client:
                 # if not connected to some guild channel -> connect to author voice channel
-                author_voice_state = ctx.author.voice
+                author_voice_state = author.voice
 
                 if not author_voice_state:
                     # if user not connected to some voice channel
-                    return await ctx.channel.send(f'{emoji.failure} '
+                    return await channel.send(f'{emoji.failure} '
                                                   f'**You are not connected to any voice channel on guild**',
                                                   delete_after=5)
 
                 self.voice_client = await author_voice_state.channel.connect()
 
-            elif self.voice_client and self.voice_client.channel.id != ctx.author.voice.channel.id:
+            elif self.voice_client and self.voice_client.channel.id != author.voice.channel.id:
                 # if user in another voice channel -> move to him voice channel
-                await self.voice_client.move_to(ctx.author.voice.channel)
+                await self.voice_client.move_to(author.voice.channel)
 
             if not self.player:
-                self.player = Player(ctx, self.bot)
-                self.players[ctx.guild.id] = self.player
+                self.player = Player(channel, self.bot)
+                self.players[channel.guild.id] = self.player
 
             self.player.voice = self.voice_client
 
@@ -408,10 +411,10 @@ class MusicPlayer(commands.Cog):
 
 class Player:
 
-    def __init__(self, ctx: commands.Context, bot: commands.Bot) -> None:
+    def __init__(self, channel: discord.TextChannel, bot: commands.Bot) -> None:
         self.bot: commands.Bot = bot
-        self.ctx: commands.Context = ctx
-        self.guild_id: int = ctx.guild.id
+        self.channel: discord.TextChannel = channel
+        self.guild_id: int = channel.guild.id
         self.current: Optional[Track] = None
         self.voice: Optional[discord.VoiceClient] = None
         self.queue = TrackQueue()
@@ -460,7 +463,7 @@ class Player:
 
             if not self.message:
                 await self.send_message()
-            elif self.message.id != self.ctx.channel.last_message_id:
+            elif self.message.id != self.channel.last_message_id:
                 await self.resend_message()
             # elif self.loop:
             #     pass
@@ -474,7 +477,7 @@ class Player:
 
     async def send_message(self):
         # if not message with player
-        self.message = await self.ctx.send(f'{emoji.play_pause} `{self.current.title}` **is playing now**\n'
+        self.message = await self.channel.send(f'{emoji.play_pause} `{self.current.title}` **is playing now**\n'
                                            f'{emoji.clock} **Duration**: `{self.current.duration}`',
                                            view=PlayView(self))
         logger.debug(self.message)
@@ -483,7 +486,7 @@ class Player:
     async def resend_message(self):
         # if message with player isn't last on channel
         self.message = await self.message.delete()
-        self.message = await self.ctx.send(f'{emoji.play_pause} `{self.current.title}` **is playing now**\n'
+        self.message = await self.channel.send(f'{emoji.play_pause} `{self.current.title}` **is playing now**\n'
                                            f'{emoji.clock} **Duration**: `{self.current.duration}`',
                                            view=PlayView(self))
         logger.debug(self.message)
@@ -508,7 +511,7 @@ class Player:
         self.main_loop.cancel()
         self.check_voice_members.cancel()
 
-        del self.ctx.cog.players[self.guild_id]
+        del self.bot.cogs['MusicPlayer'].players[self.guild_id]
 
 
 class Track:

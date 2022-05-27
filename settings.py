@@ -20,6 +20,8 @@ YT_API_KEY = ""
 CLIENT_ID = ""
 SECRET = ""
 
+# Url for discord oauth redirect
+REDIRECT_URL = ""
 
 try:
     from local_settings import *
