@@ -1,8 +1,11 @@
 <div class="topnav">
     <div class="search_and_play_wrapper">
         <form>
-            <div class="form-row">
+            <div class="form-row" id="search_and_play_form">
                 <input class="form-control form-control-lg" id="search" type="text" placeholder="Search and play">
+                <div class="spinner-border" id="search_spinner" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
             </div>
         </form>
     </div>
@@ -28,7 +31,7 @@
 
         <div class="discord-separator">
 
-            </div>
+        </div>
 
         <span>
             <svg width="25px" height="25px" viewBox="0 -28.5 256 256" version="1.1" xmlns="http://www.w3.org/2000/svg"
@@ -39,7 +42,8 @@
                 </g>
             </svg>{{ request.state.session.user.username }}#{{ request.state.session.user.discriminator }}</span>
         <div class="user_avatar_wrapper">
-            <img class="user_avatar" alt="avatar" src="{% if request.state.user_icon %}{{ request.state.user_icon }}{% else %}{{ url_for('static', path='images/default_avatar.jpg') }}{% endif %}">
+            <img class="user_avatar" alt="avatar"
+                 src="{% if request.state.user_icon %}{{ request.state.user_icon }}{% else %}{{ url_for('static', path='images/default_avatar.jpg') }}{% endif %}">
         </div>
 
         {% endif %}
