@@ -254,11 +254,24 @@ fill:  #ced4da;
 }
 
 #search-result {
-    background-color: red;
-    background: red;
     margin-left: 116px;
     position: fixed;
     z-index: 2;
     margin-top: 62px;
     width: 500px;
+}
+
+.display_box_hover, .display_box:hover
+{
+  background: lightgrey;
+}
+
+.dropdown-custom-item {
+    width: 100%;
+    padding: 0.25rem 1rem;
+    font-weight: 400;
+    color: #212529;
+    text-align: inherit;
+    text-decoration: none;
+    border: 0
 }
