@@ -34,7 +34,7 @@
             crossorigin="anonymous"></script>
     <script src="{{ url_for('static', path='js/jquery.js') }}"></script>
     <script>
-        let delayTimer;
+        let delayTimer
         const navBar = document.getElementById("mySidenav")
 
         navBar.addEventListener('mouseover', () => {
@@ -54,13 +54,12 @@
         }
 
         $('#search').on('input', function () {
-            console.log('hi')
             $('#search-result').empty()
             let query = $(this).val()
             let spinner = $('#search_spinner')
+            clearTimeout(delayTimer)
             if (query) {
-                spinner.addClass("search_spinner_process");
-                clearTimeout(delayTimer)
+                spinner.addClass("search_spinner_process")
                 delayTimer = setTimeout(function () {
                     $.ajax({
                         url: '/search/',
@@ -77,12 +76,11 @@
                             })
                         })
                     })
-                }, 1000);
-
+                }, 500)
             }
-           if ($('#search').val().length == 0) {
-           $('#search-result').empty()
-           }
+            else {
+                spinner.removeClass("search_spinner_process")
+            }
         })
     </script>
 {% endblock %}
