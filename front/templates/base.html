@@ -34,7 +34,6 @@
             crossorigin="anonymous"></script>
     <script src="{{ url_for('static', path='js/jquery.js') }}"></script>
     <script>
-        let delayTimer
         const navBar = document.getElementById("mySidenav")
 
         navBar.addEventListener('mouseover', () => {
@@ -54,32 +53,32 @@
         }
 
         $('#search').on('input', function () {
-            $('#search-result').empty()
+            let search_result = $('#search-result')
+            search_result.show()
             let query = $(this).val()
             let spinner = $('#search_spinner')
-            clearTimeout(delayTimer)
             if (query) {
                 spinner.addClass("search_spinner_process")
-                delayTimer = setTimeout(function () {
                     $.ajax({
                         url: '/search/',
                         data: {query: query}
                     }).done(function (response) {
-                        spinner.removeClass("search_spinner_process");
+                        search_result.empty()
                         $.each(response, function (k, v) {
                             let option = `<div data-url="${v.url}">${v.title}</div>`
-                            $(option).appendTo('#search-result').on('click', function () {
+                            $(option).appendTo(search_result).on('click', function () {
                                 $.ajax({
                                     url: '/play/',
                                     data: {query: this.dataset.url}
                                 })
                             })
                         })
+                        spinner.removeClass("search_spinner_process");
                     })
-                }, 500)
             }
             else {
                 spinner.removeClass("search_spinner_process")
+                search_result.hide()
             }
         })
     </script>
