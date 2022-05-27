@@ -53,21 +53,28 @@
             document.getElementById("mySidenav").style.width = "0";
         }
 
-        $('#search').on('input', function (){
+        $('#search').on('input', function () {
+            $('#search-result').empty()
             let query = $(this).val()
             let spinner = document.getElementById('search_spinner');
-
             spinner.classList.add("search_spinner_process");
-
+          
             if (query) {
                 clearTimeout(delayTimer)
-                delayTimer = setTimeout(function() {
-
+                delayTimer = setTimeout(function () {
                     $.ajax({
                         url: '/search/',
                         data: {query: query}
-                    }).done(function(response) {
-                        console.log('Done: ', response);
+                    }).done(function (response) {
+                        $.each(response, function (k, v) {
+                            let option = `<div data-url="${v.url}">${v.title}</div>`
+                            $(option).appendTo('#search-result').on('click', function () {
+                                $.ajax({
+                                    url: '/play/',
+                                    data: {query: this.dataset.url}
+                                })
+                            })
+                        })
                     })
 
                     spinner.classList.remove("search_spinner_process");

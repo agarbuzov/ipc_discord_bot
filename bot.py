@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import settings
@@ -7,6 +8,7 @@ import discord
 from discord.ext import commands
 
 from discord_bot.music import MusicPlayer
+from discord_bot.utils.websocket import WebSocket
 from discord_bot.notification import Notification
 
 bot = commands.Bot(command_prefix='!', intents=discord.Intents.all(), enable_debug_events=True)
@@ -30,7 +32,30 @@ async def _send(ctx: commands.Context, *, query: str):
     """
     await ctx.send(query)
 
+websocket = WebSocket('0.0.0.0', 5001)
+
+
+@websocket.add_event
+async def play(data):
+    from discord_bot.music import Track
+    user_id = data.get('user')
+    query = data.get('query')
+    author = bot.get_user(user_id)
+    for voice_channel in [voice_channel for guild in author.mutual_guilds for voice_channel in guild.voice_channels]:
+        if author in voice_channel.members:
+            guild = voice_channel.guild
+            break
+    author = guild.get_member(user_id)
+    channel = guild.text_channels[0]
+    await bot.cogs['MusicPlayer'].prepare_voice_client(channel, author)
+    result = await bot.cogs['MusicPlayer'].search(query)
+    track = Track(result['webpage_url'], result['title'], result['duration'])
+    await bot.cogs['MusicPlayer'].player.queue.put(track)
+    return json.dumps({"message": "Success"})
+
+
 if __name__ == '__main__':
     bot.add_cog(MusicPlayer(bot))
     bot.add_cog(Notification())
+    asyncio.get_event_loop().run_until_complete(websocket.serve())
     bot.run(settings.BOT_TOKEN)

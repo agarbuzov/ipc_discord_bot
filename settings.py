@@ -14,20 +14,22 @@ CHAT_ID = ""
 YT_USERNAME = ""
 YT_PASSWORD = ""
 YT_COOKIE_PATH = ""
-YT_API_KEY = ""
 
 # Discord app tokens for front app
 CLIENT_ID = ""
 SECRET = ""
 
+# Url for discord oauth redirect
+REDIRECT_URL = ""
 
 try:
     from local_settings import *
 except:
     pass
-
 YTDL_OPTIONS = {
     'format': 'bestaudio/best',
+    'skip_download': True,
+    'extract_flat': True,
     'extractaudio': True,
     'audioformat': 'mp3',
     'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
