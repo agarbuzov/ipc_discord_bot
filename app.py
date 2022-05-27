@@ -1,7 +1,7 @@
 import json
-
-import requests
+import asyncio
 import settings
+import functools
 import websockets
 import urllib.parse
 
@@ -17,6 +17,8 @@ from front.utils import get_token
 from front.utils import get_user
 from front.utils import get_current_user
 from front.utils import get_user_icon
+
+from discord_bot.music import ytdl
 
 from models import session
 from models import User
@@ -77,24 +79,14 @@ async def auth(code: str):
 
 @app.get("/search/")
 async def search(query: str):
-    url = "https://youtube.googleapis.com/youtube/v3/search"
-    params = {
-        "key": settings.YT_API_KEY,
-        "q": query,
-        "maxResult": 5,
-        "part": "snippet",
-        "type": "video",
-        "regionCode": "BY"
-    }
-    response = requests.get(url=url, params=params)
-    data = response.json()
+    partial = functools.partial(ytdl.extract_info, f'ytsearch5:{query}', download=False)
+    data = await asyncio.get_event_loop().run_in_executor(None, partial)
     result = [
         {
-            'url': f'https://www.youtube.com/watch?v={result["id"]["videoId"]}',
-            'icon': result['snippet']['thumbnails']['default']['url'],
-            'title': result['snippet']['title']
+            'url': f'https://www.youtube.com/watch?v={track.get("id")}',
+            'title': track.get('title')
         }
-        for result in data['items']
+        for track in data.get('entries')
     ]
     return result
 
@@ -105,6 +97,7 @@ async def play(query: str, request: Request):
         await websocket.send(json.dumps({"e": "play", "d": {"user": request.state.session.user.id, "query": query}}))
         response = json.loads(await websocket.recv())
         return response
+
 
 # @app.get('/guilds/')
 # async def guilds():

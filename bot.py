@@ -7,8 +7,8 @@ from loguru import logger
 import discord
 from discord.ext import commands
 
-from discord_bot.utils.decorator import WebSocket
 from discord_bot.music import MusicPlayer
+from discord_bot.utils.websocket import WebSocket
 from discord_bot.notification import Notification
 
 bot = commands.Bot(command_prefix='!', intents=discord.Intents.all(), enable_debug_events=True)

@@ -52,10 +52,9 @@
         function closeNav() {
             document.getElementById("mySidenav").style.width = "0";
         }
-        $(document).click(function(event) {
-            console.log($(event.target))
-        });
+
         $('#search').on('input', function () {
+            $('#search-result').empty()
             let query = $(this).val()
             if (query) {
                 clearTimeout(delayTimer)
@@ -64,7 +63,6 @@
                         url: '/search/',
                         data: {query: query}
                     }).done(function (response) {
-                        $('#search-result').empty()
                         $.each(response, function (k, v) {
                             let option = `<div data-url="${v.url}">${v.title}</div>`
                             $(option).appendTo('#search-result').on('click', function () {
