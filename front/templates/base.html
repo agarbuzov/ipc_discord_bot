@@ -55,17 +55,30 @@
 
         $('#search').on('input', function (){
             let query = $(this).val()
+            let spinner = document.getElementById('search_spinner');
+
+            spinner.classList.add("search_spinner_process");
+
             if (query) {
                 clearTimeout(delayTimer)
                 delayTimer = setTimeout(function() {
+
                     $.ajax({
                         url: '/search/',
                         data: {query: query}
                     }).done(function(response) {
                         console.log('Done: ', response);
                     })
+
+                    spinner.classList.remove("search_spinner_process");
+
                 }, 1000);
             }
+
+           if ($('#search').val().length == 0) {
+           spinner.classList.remove("search_spinner_process");
+           }
+
         })
     </script>
 {% endblock %}

@@ -1,3 +1,5 @@
+import time
+
 import requests
 import settings
 
@@ -69,25 +71,14 @@ async def auth(code: str):
 
 @app.get("/search/")
 async def search(query: str):
-    url = "https://youtube.googleapis.com/youtube/v3/search"
-    params = {
-        "key": settings.YT_API_KEY,
-        "q": query,
-        "maxResult": 5,
-        "part": "snippet",
-        "type": "video",
-        "regionCode": "BY"
-    }
-    response = requests.get(url=url, params=params)
-    data = response.json()
     result = [
-        {
-            'url': f'https://www.youtube.com/watch?v={result["id"]["videoId"]}',
-            'icon': result['snippet']['thumbnails']['default']['url'],
-            'title': result['snippet']['title']
-        }
-        for result in data['items']
+        {'title': 'Dora - Dura'},
+        {'title': 'bbno$ - r u mad'},
+        {'title': 'Cradles - Sub Urban'},
+        {'title': 'RSAC - NBA'},
+        {'title': 'Doom OST'},
     ]
+    time.sleep(2)  # speed simulation
     return result
 
 

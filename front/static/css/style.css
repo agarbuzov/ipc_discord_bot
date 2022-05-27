@@ -232,3 +232,20 @@ fill:  #ced4da;
 .discord_wrapper svg {
     padding: 0 3px 0 0;
 }
+
+#search_and_play_form {
+    position: relative;
+}
+
+#search_spinner {
+    position: absolute;
+    top: 16%;
+    left: 87%;
+    display: none;
+}
+
+.search_spinner_process {
+     display: flex!important;
+}
+
+
