@@ -56,16 +56,16 @@
         $('#search').on('input', function () {
             $('#search-result').empty()
             let query = $(this).val()
-            let spinner = document.getElementById('search_spinner');
-            spinner.classList.add("search_spinner_process");
-          
+            let spinner = $('#search_spinner')
             if (query) {
+                spinner.addClass("search_spinner_process");
                 clearTimeout(delayTimer)
                 delayTimer = setTimeout(function () {
                     $.ajax({
                         url: '/search/',
                         data: {query: query}
                     }).done(function (response) {
+                        spinner.removeClass("search_spinner_process");
                         $.each(response, function (k, v) {
                             let option = `<div data-url="${v.url}">${v.title}</div>`
                             $(option).appendTo('#search-result').on('click', function () {
@@ -76,16 +76,8 @@
                             })
                         })
                     })
-
-                    spinner.classList.remove("search_spinner_process");
-
                 }, 1000);
             }
-
-           if ($('#search').val().length == 0) {
-           spinner.classList.remove("search_spinner_process");
-           }
-
         })
     </script>
 {% endblock %}
