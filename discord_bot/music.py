@@ -452,7 +452,7 @@ class Player:
                             await self.queue.put(self.current)
                         self.current = await self.queue.get()
                 except Exception as e:
-                    print(e)
+                    logger.debug(e)
                     return
                 except asyncio.TimeoutError:
                     # Dont disconnect from channel when use loop, why ???
