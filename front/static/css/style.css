@@ -86,7 +86,7 @@ a:hover {
 .content_container {
 	margin-left: 76px;
 	min-height: calc(100vh - 76px);
-	padding: 50px 50px;
+	padding: 100px 50px;
 }
 
 
@@ -98,6 +98,7 @@ a:hover {
   justify-content: space-between;
   align-items: center;
   padding: 0 0 0 20px;
+
 }
 
 .topnav svg {
@@ -237,6 +238,10 @@ fill:  #ced4da;
     position: relative;
 }
 
+#search {
+    width: 500px;
+}
+
 #search_spinner {
     position: absolute;
     top: 16%;
@@ -248,4 +253,12 @@ fill:  #ced4da;
      display: flex!important;
 }
 
-
+#search-result {
+    background-color: red;
+    background: red;
+    margin-left: 116px;
+    position: fixed;
+    z-index: 2;
+    margin-top: 62px;
+    width: 500px;
+}

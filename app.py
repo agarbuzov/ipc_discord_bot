@@ -84,7 +84,7 @@ async def search(query: str):
     result = [
         {
             'url': f'https://www.youtube.com/watch?v={track.get("id")}',
-            'title': track.get('title')
+            'title': track.get('title') if len(track.get('title')) < 25 else track.get('title')[:25] + '...'
         }
         for track in data.get('entries')
     ]
