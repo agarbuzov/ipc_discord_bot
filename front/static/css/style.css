@@ -69,10 +69,10 @@ a:hover {
 .wrap_nav p {
 	opacity: 0;
 }
-.sidenav.wrap_nav_open {
+.sidenav.wrap-nav-open {
 	width: 250px;
 }
-.sidenav.wrap_nav_open .wrap_nav p , .sidenav.wrap_nav_open .logo_wrapper span {
+.sidenav.wrap-nav-open .wrap_nav p , .sidenav.wrap-nav-open .logo_wrapper span {
 	opacity: 1;
 }
 #main {
@@ -274,4 +274,8 @@ fill:  #ced4da;
     text-align: inherit;
     text-decoration: none;
     border: 0
+}
+
+.current {
+	color: #000000!important;
 }
