@@ -2,6 +2,7 @@ import json
 import asyncio
 import settings
 import functools
+import youtube_dl
 import websockets
 import urllib.parse
 
@@ -18,8 +19,6 @@ from front.utils import get_user
 from front.utils import get_current_user
 from front.utils import get_user_icon
 
-from discord_bot.music import ytdl
-
 from models import session
 from models import User
 from models import UserSession
@@ -30,6 +29,10 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="front/static"), name="static")
 
 templates = Jinja2Templates(directory="front/templates")
+
+settings.YTDL_OPTIONS['skip_download'] = True
+settings.YTDL_OPTIONS['extract_flat'] = True
+ytdl = youtube_dl.YoutubeDL(settings.YTDL_OPTIONS)
 
 
 @app.get("/", response_class=HTMLResponse)

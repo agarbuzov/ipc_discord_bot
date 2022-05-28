@@ -26,10 +26,9 @@ try:
     from local_settings import *
 except:
     pass
+
 YTDL_OPTIONS = {
     'format': 'bestaudio/best',
-    'skip_download': True,
-    'extract_flat': True,
     'extractaudio': True,
     'audioformat': 'mp3',
     'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',

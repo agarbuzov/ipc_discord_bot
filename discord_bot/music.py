@@ -451,17 +451,19 @@ class Player:
                         if self.current and self.queue_loop:
                             await self.queue.put(self.current)
                         self.current = await self.queue.get()
-                except Exception as e:
-                    logger.debug(e)
-                    return
+
                 except asyncio.TimeoutError:
                     # Dont disconnect from channel when use loop, why ???
                     self.bot.loop.create_task(self.stop())
                     return
             # self.voice.play(self.current.create_source(self.bot.loop), after=self.next_song)
             source = await self.current.create_source(self.bot.loop)
-            logger.debug(source)
-            self.voice.play(source, after=self.next_song)
+
+            try:
+                self.voice.play(source, after=self.next_song)
+            except Exception as e:
+                logger.debug(e)
+                self.voice.play(source, after=self.next_song)
 
             if not self.message:
                 await self.send_message()
