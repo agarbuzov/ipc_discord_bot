@@ -8,6 +8,9 @@ import urllib.parse
 
 from fastapi import FastAPI
 from fastapi import Request
+from fastapi import status
+from fastapi import Depends
+from fastapi import HTTPException
 
 from fastapi.responses import HTMLResponse
 from fastapi.responses import RedirectResponse
@@ -35,24 +38,31 @@ settings.YTDL_OPTIONS['extract_flat'] = True
 ytdl = youtube_dl.YoutubeDL(settings.YTDL_OPTIONS)
 
 
+async def is_authorized(request: Request):
+    if not hasattr(request.state, 'session'):
+        raise HTTPException(
+            status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+            headers={'Location': '/login/'})
+
+
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
+async def index(request: Request, authorize=Depends(is_authorized)):
     return templates.TemplateResponse("base.html", {"request": request})
 
 
 @app.get("/history/", response_class=HTMLResponse)
-async def history(request: Request):
+async def history(request: Request, authorize=Depends(is_authorized)):
     history_ = session.query(History).order_by(History.date.desc()).limit(50).all()
     return templates.TemplateResponse("history.html", {"request": request, "history": history_})
 
 
 @app.get("/playlists/", response_class=HTMLResponse)
-async def playlists(request: Request):
+async def playlists(request: Request, authorize=Depends(is_authorized)):
     return templates.TemplateResponse("playlists.html", {"request": request})
 
 
 @app.get("/playlists/create/", response_class=HTMLResponse)
-async def playlist_create(request: Request):
+async def playlist_create(request: Request, authorize=Depends(is_authorized)):
     return templates.TemplateResponse("playlist_create.html", {"request": request})
 
 
@@ -81,7 +91,7 @@ async def auth(code: str):
 
 
 @app.get("/search/")
-async def search(query: str):
+async def search(query: str, authorize=Depends(is_authorized)):
     partial = functools.partial(ytdl.extract_info, f'ytsearch5:{query}', download=False)
     data = await asyncio.get_event_loop().run_in_executor(None, partial)
     result = [
@@ -95,11 +105,16 @@ async def search(query: str):
 
 
 @app.get("/play/")
-async def play(query: str, request: Request):
+async def play(query: str, request: Request, authorize=Depends(is_authorized)):
     async with websockets.connect("ws://localhost:5001") as websocket:
         await websocket.send(json.dumps({"e": "play", "d": {"user": request.state.session.user.id, "query": query}}))
         response = json.loads(await websocket.recv())
         return response
+
+
+@app.get("/login/", response_class=HTMLResponse)
+async def login(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
 
 
 # @app.get('/guilds/')
@@ -112,8 +127,7 @@ async def play(query: str, request: Request):
 
 @app.middleware("http")
 async def set_user(request: Request, call_next):
-    if token := request.cookies.get('session'):
-        user_session = await get_current_user(token)
+    if user_session := await get_current_user(request.cookies.get('session')):
         request.state.session = user_session
         if user_session.user.avatar:
             request.state.user_icon = await get_user_icon(user_session.user.id)
