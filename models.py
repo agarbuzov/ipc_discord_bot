@@ -21,6 +21,12 @@ Base = declarative_base()
 session = Session(bind=engine)
 
 
+class UserGuild(Base):
+    __tablename__ = 'user_guild'
+    guild_id = Column(ForeignKey("guild.id"), primary_key=True)
+    user_id = Column(ForeignKey("user.id"), primary_key=True)
+
+
 class User(Base):
     __tablename__ = 'user'
     id = Column(BigInteger, primary_key=True)
@@ -29,6 +35,16 @@ class User(Base):
     avatar = Column(String)
     avatar_decoration = Column(String)
     locale = Column(String(2))
+    guilds = relationship("Guild", secondary='user_guild')
+
+    def get_guilds(self):
+        return [guild.id for guild in self.guilds]
+
+
+class Guild(Base):
+    __tablename__ = 'guild'
+    id = Column(BigInteger, primary_key=True)
+    name = Column(String(255))
 
 
 class UserSession(Base):

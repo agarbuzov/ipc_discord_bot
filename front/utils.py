@@ -35,6 +35,13 @@ async def get_user(token_type, token):
     return response.json()
 
 
+async def get_user_guilds(token_type, token):
+    url = "https://discord.com/api/v10/users/@me/guilds"
+    headers = {"Authorization": f"{token_type} {token}"}
+    response = requests.get(url, headers=headers)
+    return response.json()
+
+
 async def get_user_icon(user_id):
     avatar = session.query(User).get(user_id).avatar
     url = f"https://cdn.discordapp.com/avatars/{user_id}/{avatar}.png?size=64"

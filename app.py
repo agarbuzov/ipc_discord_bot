@@ -21,11 +21,14 @@ from front.utils import get_token
 from front.utils import get_user
 from front.utils import get_current_user
 from front.utils import get_user_icon
+from front.utils import get_user_guilds
 
 from models import session
 from models import User
 from models import UserSession
 from models import History
+from models import Playlist
+from models import Guild
 
 app = FastAPI()
 
@@ -43,6 +46,18 @@ async def is_authorized(request: Request):
         raise HTTPException(
             status_code=status.HTTP_307_TEMPORARY_REDIRECT,
             headers={'Location': '/login/'})
+    if settings.PERMITTED_GUILD not in request.state.session.user.get_guilds():
+        raise Forbidden
+
+
+class Forbidden(HTTPException):
+    def __init__(self):
+        super().__init__(status_code=status.HTTP_403_FORBIDDEN)
+
+
+@app.exception_handler(Forbidden)
+async def forbidden(request):
+    return templates.TemplateResponse("error403.html", {"request": request}, status_code=403)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -73,17 +88,29 @@ async def auth(code: str):
     token = authorization_data.get('access_token')
 
     user_data = await get_user(token_type, token)
+    user_guilds = await get_user_guilds(token_type, token)
     user = session.query(User).get(user_data.get('id'))
     user_session = session.query(UserSession).get(token)
 
-    if not user_session:
-        user_session = UserSession(user_id=user_data.get('id'), session=token)
-        session.add(user_session)
+    if user_data:
 
-    if not user:
-        user = User(**{k: v for k, v in user_data.items() if k in [column.name for column in User.__table__.columns]})
-        session.add(user)
+        if not user_session:
+            user_session = UserSession(user_id=user_data.get('id'), session=token)
+            session.add(user_session)
 
+        if not user:
+            user = User(**{k: v for k, v in user_data.items() if k in [column.name for column in User.__table__.columns]})
+
+    for guild in user_guilds:
+
+        if guild := session.query(Guild).get(guild.get('id')):
+            if guild not in user.guilds:
+                user.guilds.append(guild)
+        else:
+            guild = Guild(id=guild.get('id'), name=guild.get('name'))
+            user.guilds.append(guild)
+
+    session.add(user)
     session.commit()
     response = RedirectResponse('/')
     response.set_cookie('session', token)

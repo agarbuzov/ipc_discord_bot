@@ -22,6 +22,9 @@ SECRET = ""
 # Url for discord oauth redirect
 REDIRECT_URL = ""
 
+# Guild id
+PERMITTED_GUILD = 793874272040255498
+
 try:
     from local_settings import *
 except:
