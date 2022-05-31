@@ -56,8 +56,8 @@ class Forbidden(HTTPException):
 
 
 @app.exception_handler(Forbidden)
-async def forbidden(request):
-    return templates.TemplateResponse("error403.html", {"request": request}, status_code=403)
+async def forbidden(request, exc):
+    return templates.TemplateResponse("403.html", {"request": request}, status_code=403)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -103,9 +103,9 @@ async def auth(code: str):
 
     for guild in user_guilds:
 
-        if guild := session.query(Guild).get(guild.get('id')):
-            if guild not in user.guilds:
-                user.guilds.append(guild)
+        if guild_ := session.query(Guild).get(guild.get('id')):
+            if guild_ not in user.guilds:
+                user.guilds.append(guild_)
         else:
             guild = Guild(id=guild.get('id'), name=guild.get('name'))
             user.guilds.append(guild)
