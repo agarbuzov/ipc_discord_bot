@@ -13,8 +13,13 @@
                 <input type="text" class="form-control" placeholder="Playlist name">
             </div>
 
-            <div class="mb-3">
-                <input class="form-control" type="file" id="formFile">
+            <img src="{{ url_for('static', path='images/playlist_cover.png') }}"
+                     class="img-thumbnail img-fluid rounded float-start mb-3"
+                     style="width: 250px; height: 250px; object-fit: cover;" id="filePreview">
+
+            <div class="input-group mb-3">
+                <label class="input-group-text" for="inputGroupFile01">Playlist cover</label>
+                <input type="file" class="form-control" id="inputGroupFile01" onchange="loadFile(event)">
             </div>
 
             <div class="input-group mb-3">
@@ -69,5 +74,14 @@
             $('.custom-file-label').html(fileName);
         });
 
+        var loadFile = function(event) {
+        var output = document.getElementById('filePreview');
+        output.src = URL.createObjectURL(event.target.files[0]);
+        output.onload = function() {
+          URL.revokeObjectURL(output.src) // free memory
+        }
+        };
+
 </script>
+
 {% endblock %}
