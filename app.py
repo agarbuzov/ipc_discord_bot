@@ -134,3 +134,8 @@ async def set_user(request: Request, call_next):
     request.state.redirect_url = urllib.parse.quote(settings.REDIRECT_URL, safe='')
     response = await call_next(request)
     return response
+
+
+@app.get("/settings/", response_class=HTMLResponse)
+async def index(request: Request, authorize=Depends(is_authorized)):
+    return templates.TemplateResponse("settings.html", {"request": request})

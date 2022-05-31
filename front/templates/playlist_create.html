@@ -1,52 +1,52 @@
 {% extends 'base.html' %}
 {% block content %}
-    <div style="display: grid; grid-template-rows: 100px 1fr; gap:15px;">
-        <div class="d-flex justify-content-between align-items-center">
-            <span class="display-4 mb-1">Create Playlist</span>
-        </div>
+<div style="display: grid; grid-template-rows: 100px 1fr; gap:15px;">
+    <div class="d-flex justify-content-between align-items-center">
+        <span class="display-4 mb-1">Create Playlist</span>
+    </div>
 
-        <div>
-            <div class="container float-start">
+    <div>
+        <div class="container float-start">
 
-                <div class="input-group mb-3">
-                    <span class="input-group-text">Playlist name</span>
-                    <input type="text" class="form-control" placeholder="Playlist name">
-                </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text">Playlist name</span>
+                <input type="text" class="form-control" placeholder="Playlist name">
+            </div>
 
-                <div class="mb-3">
-                    <input class="form-control" type="file" id="formFile">
-                </div>
+            <div class="mb-3">
+                <input class="form-control" type="file" id="formFile">
+            </div>
 
-                <div class="input-group mb-3">
-                    <span class="input-group-text">1</span>
-                    <input type="text" class="form-control" placeholder="https://www.youtube.com/...">
-                </div>
-
-                <input type="hidden" value="1" id="total_chq">
-
-                <div id="new_chq"></div>
-
-                <div class="justify-content-between align-items-center d-flex">
-
-                    <div>
-                        <button type="button" class="btn btn-secondary add me-3">Add new</button>
-                        <button type="button" class="btn btn-danger remove">Remove last</button>
-                    </div>
-
-                    <button type="button" class="btn btn-success">Create Playlist</button>
-                </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text">1</span>
+                <input type="text" class="form-control" placeholder="https://www.youtube.com/...">
             </div>
 
             <input type="hidden" value="1" id="total_chq">
 
+            <div id="new_chq"></div>
+
+            <div class="justify-content-between align-items-center d-flex">
+
+                <div>
+                    <button type="button" class="btn btn-secondary add me-3">Add new</button>
+                    <button type="button" class="btn btn-danger remove">Remove last</button>
+                </div>
+
+                <button type="button" class="btn btn-success">Create Playlist</button>
+            </div>
         </div>
 
+        <input type="hidden" value="1" id="total_chq">
+
     </div>
+
+</div>
 {% endblock %}
 
 {% block scripts %}
-    {{ super() }}
-    <script>
+{{ super() }}
+<script>
         $('.add').on('click', function () {
             let counter = $('#total_chq')
             let new_chq_no = parseInt(counter.val()) + 1
@@ -68,5 +68,6 @@
             var fileName = e.target.files[0].name;
             $('.custom-file-label').html(fileName);
         });
-    </script>
+
+</script>
 {% endblock %}
