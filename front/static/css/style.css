@@ -279,3 +279,24 @@ fill:  #ced4da;
 .current {
 	color: #000000!important;
 }
+
+.testimonial-card .card-up {
+  height: 120px;
+  overflow: hidden;
+  border-top-left-radius: .25rem;
+  border-top-right-radius: .25rem;
+}
+
+.testimonial-card .avatar {
+  width: 120px;
+  margin-top: -60px;
+  overflow: hidden;
+  border: 5px solid #fff;
+  border-radius: 50%;
+}
+
+.avatar_image {
+  width: 120px!important;
+  height: 100px!important;
+  object-fit: cover;
+}
