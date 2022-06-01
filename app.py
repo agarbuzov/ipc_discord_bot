@@ -144,13 +144,13 @@ async def login(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 
-# @app.get('/guilds/')
-# async def guilds():
-#     async with websockets.connect("ws://localhost:8765") as websocket:
-#         await websocket.send(json.dumps({"event": "get_guilds"}))
-#         result = dill.loads(await websocket.recv())
-#     return result
-
+@app.get("/guilds/", response_class=HTMLResponse)
+async def guilds(request: Request, authorize=Depends(is_authorized)):
+    # хз что это просто оставил твое, потом реши сам что это.
+    #     async with websockets.connect("ws://localhost:8765") as websocket:
+    #         await websocket.send(json.dumps({"event": "get_guilds"}))
+    #         result = dill.loads(await websocket.recv())
+    return templates.TemplateResponse("guilds.html", {"request": request})
 
 @app.middleware("http")
 async def set_user(request: Request, call_next):
