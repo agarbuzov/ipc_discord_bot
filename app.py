@@ -164,5 +164,5 @@ async def set_user(request: Request, call_next):
 
 
 @app.get("/settings/", response_class=HTMLResponse)
-async def index(request: Request, authorize=Depends(is_authorized)):
+async def settings(request: Request, authorize=Depends(is_authorized)):
     return templates.TemplateResponse("settings.html", {"request": request})
