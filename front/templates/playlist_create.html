@@ -1,87 +1,56 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<div style="display: grid; grid-template-rows: 100px 1fr; gap:15px;">
-    <div class="d-flex justify-content-between align-items-center">
-        <span class="display-4 mb-1">Create Playlist</span>
-    </div>
+    <div style="display: grid; grid-template-rows: 100px 1fr; gap:15px;">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="display-4 mb-1">Create Playlist</span>
+        </div>
 
-    <div>
-        <div class="container float-start">
+        <div>
+            <div class="container float-start">
 
-            <div class="input-group mb-3">
-                <span class="input-group-text">Playlist name</span>
-                <input type="text" class="form-control" placeholder="Playlist name">
-            </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">Playlist name</span>
+                    <input type="text" class="form-control" placeholder="Playlist name">
+                </div>
 
-            <img src="{{ url_for('static', path='images/playlist_cover.png') }}"
-                     class="img-thumbnail img-fluid rounded float-start mb-3"
-                     style="width: 250px; height: 250px; object-fit: cover;" id="filePreview">
+                <img src="{{ url_for('static', path='images/playlist_cover.png') }}"
+                         class="img-thumbnail img-fluid rounded float-start mb-3"
+                         style="width: 250px; height: 250px; object-fit: cover;" id="filePreview">
 
-            <div class="input-group mb-3">
-                <label class="input-group-text" for="inputGroupFile01">Playlist cover</label>
-                <input type="file" class="form-control" id="inputGroupFile01" onchange="loadFile(event)">
-            </div>
+                <div class="input-group mb-3">
+                    <label class="input-group-text" for="inputImageFile">Playlist cover</label>
+                    <input type="file" class="form-control" id="inputImageFile">
+                </div>
 
-            <div class="input-group mb-3">
-                <span class="input-group-text">1</span>
-                <input type="text" class="form-control" placeholder="https://www.youtube.com/...">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">1</span>
+                    <input type="text" class="form-control" placeholder="https://www.youtube.com/...">
+                </div>
+
+                <input type="hidden" value="1" id="total_chq">
+
+                <div id="new_chq"></div>
+
+                <div class="justify-content-between align-items-center d-flex">
+
+                    <div>
+                        <button type="button" class="btn btn-secondary add me-3">Add new</button>
+                        <button type="button" class="btn btn-danger remove">Remove last</button>
+                    </div>
+
+                    <button type="button" class="btn btn-success">Create Playlist</button>
+                </div>
             </div>
 
             <input type="hidden" value="1" id="total_chq">
 
-            <div id="new_chq"></div>
-
-            <div class="justify-content-between align-items-center d-flex">
-
-                <div>
-                    <button type="button" class="btn btn-secondary add me-3">Add new</button>
-                    <button type="button" class="btn btn-danger remove">Remove last</button>
-                </div>
-
-                <button type="button" class="btn btn-success">Create Playlist</button>
-            </div>
         </div>
 
-        <input type="hidden" value="1" id="total_chq">
-
     </div>
-
-</div>
 {% endblock %}
 
 {% block scripts %}
-{{ super() }}
-<script>
-        $('.add').on('click', function () {
-            let counter = $('#total_chq')
-            let new_chq_no = parseInt(counter.val()) + 1
-            let new_input2 = "<div class='input-group mb-3'id='new_" + new_chq_no + "'><span class='input-group-text'>" + new_chq_no + "</span><input type='text' class='form-control' placeholder='https://www.youtube.com/...'></div>"
-            $('#new_chq').append(new_input2)
-            counter.val(new_chq_no)
-        });
-
-        $('.remove').on('click', function () {
-            let counter = $('#total_chq')
-            let last_chq_no = counter.val();
-            if (last_chq_no > 1) {
-                $('#new_' + last_chq_no).remove();
-                counter.val(last_chq_no - 1);
-            }
-        });
-
-        $('input[type="file"]').change(function (e) {
-            var fileName = e.target.files[0].name;
-            $('.custom-file-label').html(fileName);
-        });
-
-        var loadFile = function(event) {
-        var output = document.getElementById('filePreview');
-        output.src = URL.createObjectURL(event.target.files[0]);
-        output.onload = function() {
-          URL.revokeObjectURL(output.src) // free memory
-        }
-        };
-
-</script>
-
+    {{ super() }}
+    <script src="{{ url_for('static', path='js/playlist.js') }}"></script>
 {% endblock %}

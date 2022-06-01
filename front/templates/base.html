@@ -14,20 +14,23 @@
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='images/favicon-32x32.png') }}">
 
 </head>
+
 {% block body %}
     <body>
-    <main>
-        {% include 'parts/topnav.html' %}
-        <div class="content_container">
-            {% block content %}
+        <main>
+            {% include 'parts/topnav.html' %}
+            <div class="content_container">
+                {% block content %}
 
-            {% endblock %}
-        </div>
-    </main>
-    {% include 'parts/sidenav.html' %}
+                {% endblock %}
+            </div>
+        </main>
+        {% include 'parts/sidenav.html' %}
     </body>
 {% endblock %}
+
 </html>
+
 {% block scripts %}
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js"
             integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
@@ -36,77 +39,5 @@
             integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
             crossorigin="anonymous"></script>
     <script src="{{ url_for('static', path='js/jquery.js') }}"></script>
-    <script>
-        const navBar = $("#mySidenav")
-        const divider = '<div class="dropdown-divider"></div>'
-        window.displayBoxIndex = -1
-
-        $(`a[href="${location.pathname}"].wrap_nav`).addClass("current");
-
-        navBar.on('mouseover', function () {
-            $(this).addClass("wrap-nav-open")
-        })
-
-        navBar.on('mouseout', function () {
-            $(this).removeClass("wrap-nav-open")
-        })
-
-        $('#search').on('input', function () {
-            let search_result = $('#search-result')
-            search_result.show()
-            let query = $(this).val()
-            let spinner = $('#search_spinner')
-            if (query) {
-                spinner.addClass("search_spinner_process")
-                    $.ajax({
-                        url: '/search/',
-                        data: {query: query}
-                    }).done(function (response) {
-                        search_result.empty()
-                        window.displayBoxIndex = -1;
-                        $.each(response, function (k, v) {
-                            if (k>0) {
-                                search_result.append(divider)
-                            }
-                            let option = `<div data-url="${v.url}" class="display_box dropdown-custom-item">${v.title}</div>`
-                            $(option).appendTo(search_result).on('click', function () {
-                                $.ajax({
-                                    url: '/play/',
-                                    data: {query: this.dataset.url}
-                                })
-                            })
-                        })
-                        spinner.removeClass("search_spinner_process");
-                    })
-            }
-            else {
-                spinner.removeClass("search_spinner_process")
-                search_result.hide()
-            }
-        })
-
-        $("#search").keyup(function(e)
-        {
-            if (e.keyCode == 40)
-            {
-                Navigate(1);
-            }
-            if(e.keyCode==38)
-            {
-                Navigate(-1);
-            }
-        });
-
-        var Navigate = function(diff) {
-            displayBoxIndex += diff;
-            var oBoxCollection = $(".display_box");
-            if (displayBoxIndex >= oBoxCollection.length)
-                 displayBoxIndex = 0;
-            if (displayBoxIndex < 0)
-                 displayBoxIndex = oBoxCollection.length - 1;
-            var cssClass = "display_box_hover";
-            oBoxCollection.removeClass(cssClass).eq(displayBoxIndex).addClass(cssClass);
-        }
-    </script>
-
+    <script src="{{ url_for('static', path='js/base.js') }}"></script>
 {% endblock %}
