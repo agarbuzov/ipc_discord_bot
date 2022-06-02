@@ -1,16 +1,13 @@
-import os
-
 import requests
-
 import settings
 
 from models import session
 from models import User
 from models import UserSession
 
-from PIL import Image, ImageDraw
-import argparse
-import sys
+from PIL import Image
+from io import BytesIO
+
 
 async def get_current_user(token: str):
     user = session.query(UserSession).get(token)
@@ -53,19 +50,18 @@ async def get_user_icon(user_id):
     return url
 
 
-def get_dominated_colors(image_file, numcolors=2, resize=150):
-    # Resize image to speed up processing
-    img = Image.open(image_file)
+def get_dominated_colors(image_url, numcolors=2, resize=150):
+    response = requests.get(image_url)
+
+    img = Image.open(BytesIO(response.content))
     img = img.copy()
     img.thumbnail((resize, resize))
 
-    # Reduce to palette
     paletted = img.convert('P', palette=Image.ADAPTIVE, colors=numcolors)
-
-    # Find dominant colors
     palette = paletted.getpalette()
     color_counts = sorted(paletted.getcolors(), reverse=True)
     colors = list()
+
     for i in range(numcolors):
         palette_index = color_counts[i][1]
         dominant_color = palette[palette_index*3:palette_index*3+3]

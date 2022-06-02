@@ -1,29 +1,28 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<div style="display: grid; grid-template-rows: 100px 1fr;">
-    <div class="d-flex justify-content-between align-items-center">
-        <span class="display-3 mb-1">Guilds</span>
-    </div>
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px;">
-
-        {% for guild in guilds %}
-        <div class="card testimonial-card mt-2 mb-3">
-            <div class="card-up"
-                 style="background:
-                 linear-gradient(40deg, rgb({{guild.colors[0][0]}},{{guild.colors[0][1]}}, {{guild.colors[0][2]}}), rgb({{guild.colors[1][0]}},{{guild.colors[1][1]}}, {{guild.colors[1][2]}})) !important;"></div>
-            <div class="avatar mx-auto white">
-                <img src="{{guild.image}}" class="rounded rounded-circle img-fluid avatar_image">
-            </div>
-            <div class="card-body text-center">
-                <h4 class="card-title font-weight-bold">Martha Smith</h4>
-                <hr>
-                <p>Users count: {{guild.users_count}}</p>
-                <p>Creator: {{guild.creator}}</p>
-            </div>
+    <div style="display: grid; grid-template-rows: 100px 1fr;">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="display-3 mb-1">Guilds</span>
         </div>
-        {% endfor %}
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px;">
 
+            {% for guild in guilds %}
+            <div class="card testimonial-card mt-2 mb-3">
+                <div class="card-up"
+                     {% if guild.get('colors') %}style="background: linear-gradient(40deg, rgb({{guild.colors[0][0]}},{{guild.colors[0][1]}}, {{guild.colors[0][2]}}), rgb({{guild.colors[1][0]}},{{guild.colors[1][1]}}, {{guild.colors[1][2]}})) !important;"{% endif %}></div>
+                <div class="avatar mx-auto white">
+                    <img src="{{guild.get('icon')}}" class="rounded rounded-circle img-fluid avatar_image">
+                </div>
+                <div class="card-body text-center">
+                    <h4 class="card-title font-weight-bold">{{ guild.name }}</h4>
+                    <hr>
+                    <p>Users count: {{guild.get('member_count')}}</p>
+                    <p>Creator: {{guild.get('owner')}}</p>
+                </div>
+            </div>
+            {% endfor %}
+
+        </div>
     </div>
-</div>
-
 {% endblock %}

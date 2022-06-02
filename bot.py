@@ -54,6 +54,23 @@ async def play(data):
     return json.dumps({"message": "Success"})
 
 
+@websocket.add_event
+async def get_guilds():
+    guilds = bot.guilds
+    response = [
+        {
+            "id": guild.id,
+            "name": guild.name,
+            "owner": guild.owner.name,
+            "member_count": guild.member_count,
+            "icon": guild.icon.url if guild.icon else None,
+
+        }
+        for guild in guilds
+    ]
+    return json.dumps(response, ensure_ascii=False)
+
+
 if __name__ == '__main__':
     bot.add_cog(MusicPlayer(bot))
     bot.add_cog(Notification())

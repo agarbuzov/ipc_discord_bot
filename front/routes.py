@@ -1,8 +1,6 @@
 import json
 import asyncio
 import functools
-import os
-
 import websockets
 
 from fastapi import Request
@@ -19,9 +17,10 @@ from models import UserSession
 
 from front import ytdl
 from front import templates
-from front.utils import get_token, get_dominated_colors
+from front.utils import get_token
 from front.utils import get_user
 from front.utils import get_user_guilds
+from front.utils import get_dominated_colors
 from front.dependecies import is_authorized
 
 router = APIRouter()
@@ -113,45 +112,16 @@ async def login(request: Request):
 
 
 @router.get("/guilds/", response_class=HTMLResponse)
-async def guilds(request: Request, authorize=Depends(is_authorized)):
-    # хз что это просто оставил твое, потом реши сам что это.
-    #     async with websockets.connect("ws://localhost:8765") as websocket:
-    #         await websocket.send(json.dumps({"event": "get_guilds"}))
-    #         result = dill.loads(await websocket.recv())
-    guilds = [
-        {
-            'name': 'ИГРЫ',
-            'users_count': '22',
-            'creator': '@W4RI0CK#1999',
-            'image_path': 'front/static/images/g1.jpg',
-            'users': [],
-            'image': 'http://localhost:8000/static/images/g1.jpg'
-        },
-        {
-            'name': 'Игоры и Игори',
-            'users_count': '33',
-            'creator': '@Tema_N7#2556',
-            'image_path': 'front/static/images/g2.jpg',
-            'users': [],
-            'image': 'http://localhost:8000/static/images/g2.jpg'
-        },
-        {
-            'name': 'Фанаты рэпа и собак Хаски',
-            'users_count': '1',
-            'creator': '@W4RI0CK#1999',
-            'image_path': 'front/static/images/g3.jpg',
-            'users': [],
-            'image': 'http://localhost:8000/static/images/g3.jpg'
-        },
-    ]
+async def get_guilds(request: Request, authorize=Depends(is_authorized)):
+    async with websockets.connect("ws://localhost:5001") as websocket:
+        await websocket.send(json.dumps({"e": "get_guilds"}))
+        guilds = json.loads(await websocket.recv())
 
     for guild in guilds:
-        guild.update(get_dominated_colors(guild['image_path']))
+        if guild['icon']:
+            guild.update(get_dominated_colors(guild['icon']))
 
-    print(guilds)
-    # add pillow to requirements!!!
     return templates.TemplateResponse("guilds.html", {"request": request, 'guilds': guilds})
-
 
 
 @router.get("/settings/", response_class=HTMLResponse)
