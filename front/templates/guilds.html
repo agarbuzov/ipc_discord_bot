@@ -12,7 +12,7 @@
                 <div class="card-up"
                      {% if guild.get('colors') %}style="background: linear-gradient(40deg, rgb({{guild.colors[0][0]}},{{guild.colors[0][1]}}, {{guild.colors[0][2]}}), rgb({{guild.colors[1][0]}},{{guild.colors[1][1]}}, {{guild.colors[1][2]}})) !important;"{% endif %}></div>
                 <div class="avatar mx-auto white">
-                    <img src="{{guild.get('icon')}}" class="rounded rounded-circle img-fluid avatar_image">
+                    <img src="{% if guild.get('icon') %}{{guild.get('icon')}}{% else %}{{ url_for('static', path='images/default_avatar.jpg') }}{% endif %}" class="rounded rounded-circle img-fluid avatar_image">
                 </div>
                 <div class="card-body text-center">
                     <h4 class="card-title font-weight-bold">{{ guild.name }}</h4>

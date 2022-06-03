@@ -2,10 +2,10 @@ let counter = 1
 
 $('.add').on('click', function () {
     counter += 1
-    $('#new_chq').append(
+    $('form > div.input-group').append(
         `<div class="input-group mb-3" id="new_${counter}">
             <span class="input-group-text">${counter}</span>
-            <input type="text" class="form-control" placeholder="https://www.youtube.com/...">
+            <input type="text" class="form-control" name="tracks" placeholder="https://www.youtube.com/...">
         </div>`
     )
 })

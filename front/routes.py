@@ -1,18 +1,24 @@
 import json
+import base64
 import asyncio
 import functools
 import websockets
 
+from fastapi import File
+from fastapi import Form
 from fastapi import Request
 from fastapi import Depends
 from fastapi import APIRouter
+from fastapi import UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.responses import RedirectResponse
 
 from models import session
 from models import User
+from models import Track
 from models import Guild
 from models import History
+from models import Playlist
 from models import UserSession
 
 from front import ytdl
@@ -39,12 +45,25 @@ async def history(request: Request, authorize=Depends(is_authorized)):
 
 @router.get("/playlists/", response_class=HTMLResponse)
 async def playlists(request: Request, authorize=Depends(is_authorized)):
-    return templates.TemplateResponse("playlists.html", {"request": request})
+    playlists_ = session.query(Playlist).all()
+    return templates.TemplateResponse("playlists.html", {"request": request, "playlists": playlists_})
 
 
 @router.get("/playlists/create/", response_class=HTMLResponse)
 async def playlist_create(request: Request, authorize=Depends(is_authorized)):
     return templates.TemplateResponse("playlist_create.html", {"request": request})
+
+
+@router.post("/playlists/create/", response_class=RedirectResponse, status_code=302)
+async def playlist_create_post(request: Request, authorize=Depends(is_authorized), name: str = Form(),
+                               tracks: list = Form(), cover: UploadFile = File()):
+    author = request.state.session.user.id
+    b64_cover = base64.b64encode(await cover.read())
+    playlist = Playlist(name=name, creator_id=author, tracks=[Track(url=track) for track in tracks],
+                        cover=b64_cover.decode('utf-8'), cover_type=cover.content_type)
+    session.add(playlist)
+    session.commit()
+    return '/playlists/'
 
 
 @router.get("/auth/")
@@ -85,8 +104,8 @@ async def auth(code: str):
 
 
 @router.get("/search/")
-async def search(query: str, authorize=Depends(is_authorized)):
-    partial = functools.partial(ytdl.extract_info, f'ytsearch5:{query}', download=False)
+async def search(count: int, query: str, authorize=Depends(is_authorized)):
+    partial = functools.partial(ytdl.extract_info, f'ytsearch{count}:{query}', download=False)
     data = await asyncio.get_event_loop().run_in_executor(None, partial)
     result = [
         {

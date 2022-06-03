@@ -21,7 +21,7 @@ $('#search').on('input', function () {
         spinner.addClass("search_spinner_process")
             $.ajax({
                 url: '/search/',
-                data: {query: query}
+                data: {query: query, count: 5}
             }).done(function (response) {
                 search_result.empty()
                 window.displayBoxIndex = -1;

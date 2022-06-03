@@ -5,6 +5,7 @@ from sqlalchemy import String
 from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
 from sqlalchemy import BigInteger
+from sqlalchemy import LargeBinary
 from sqlalchemy import UniqueConstraint
 from sqlalchemy import create_engine
 
@@ -58,10 +59,11 @@ class Playlist(Base):
     __tablename__ = 'playlist'
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    guild_id = Column(Integer)
-    creator = Column(String)
+    cover = Column(Text)
+    cover_type = Column(String)
+    creator_id = Column(BigInteger, ForeignKey("user.id"))
+    creator = relationship("User")
     tracks = relationship("Track", backref=backref("playlist"), cascade="all,delete")
-    __table_args__ = (UniqueConstraint('name', 'guild_id', name='_playlist_guild_id_uc'),)
 
 
 class Track(Base):
@@ -69,7 +71,6 @@ class Track(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     url = Column(String)
-    creator = Column(String)
     duration = Column(Integer)
     playlist_id = Column(Integer, ForeignKey("playlist.id"))
 

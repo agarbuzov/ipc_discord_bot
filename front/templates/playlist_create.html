@@ -8,45 +8,40 @@
 
         <div>
             <div class="container float-start">
+                <form action="/playlists/create/" method="post" enctype="multipart/form-data">
+                    <div class="input-group">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">Playlist name</span>
+                            <input type="text" class="form-control" name="name" placeholder="Playlist name">
+                        </div>
 
-                <div class="input-group mb-3">
-                    <span class="input-group-text">Playlist name</span>
-                    <input type="text" class="form-control" placeholder="Playlist name">
-                </div>
+                        <img src="{{ url_for('static', path='images/playlist_cover.png') }}"
+                             class="img-thumbnail img-fluid rounded float-start mb-3"
+                             style="width: 250px; height: 250px; object-fit: cover;" id="filePreview">
 
-                <img src="{{ url_for('static', path='images/playlist_cover.png') }}"
-                         class="img-thumbnail img-fluid rounded float-start mb-3"
-                         style="width: 250px; height: 250px; object-fit: cover;" id="filePreview">
+                        <div class="input-group mb-3">
+                            <label class="input-group-text" for="inputImageFile">Playlist cover</label>
+                            <input type="file" class="form-control" name="cover" id="inputImageFile">
+                        </div>
 
-                <div class="input-group mb-3">
-                    <label class="input-group-text" for="inputImageFile">Playlist cover</label>
-                    <input type="file" class="form-control" id="inputImageFile">
-                </div>
-
-                <div class="input-group mb-3">
-                    <span class="input-group-text">1</span>
-                    <input type="text" class="form-control" placeholder="https://www.youtube.com/...">
-                </div>
-
-                <input type="hidden" value="1" id="total_chq">
-
-                <div id="new_chq"></div>
-
-                <div class="justify-content-between align-items-center d-flex">
-
-                    <div>
-                        <button type="button" class="btn btn-secondary add me-3">Add new</button>
-                        <button type="button" class="btn btn-danger remove">Remove last</button>
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">1</span>
+                            <input type="text" class="form-control" name="tracks" placeholder="https://www.youtube.com/...">
+                        </div>
                     </div>
 
-                    <button type="button" class="btn btn-success">Create Playlist</button>
-                </div>
+                    <div class="justify-content-between align-items-center d-flex">
+
+                        <div>
+                            <button type="button" class="btn btn-secondary add me-3">Add new</button>
+                            <button type="button" class="btn btn-danger remove">Remove last</button>
+                        </div>
+
+                        <button type="submit" class="btn btn-success">Create Playlist</button>
+                    </div>
+                </form>
             </div>
-
-            <input type="hidden" value="1" id="total_chq">
-
         </div>
-
     </div>
 {% endblock %}
 
