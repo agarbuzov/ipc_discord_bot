@@ -28,6 +28,7 @@ from front.utils import get_user
 from front.utils import get_user_guilds
 from front.utils import get_dominated_colors
 from front.dependecies import is_authorized
+from front.exceptions import WebsocketUnavailable
 
 router = APIRouter()
 
@@ -132,9 +133,12 @@ async def login(request: Request):
 
 @router.get("/guilds/", response_class=HTMLResponse)
 async def get_guilds(request: Request, authorize=Depends(is_authorized)):
-    async with websockets.connect("ws://localhost:5001") as websocket:
-        await websocket.send(json.dumps({"e": "get_guilds"}))
-        guilds = json.loads(await websocket.recv())
+    try:
+        async with websockets.connect("ws://localhost:5001") as websocket:
+            await websocket.send(json.dumps({"e": "get_guilds"}))
+            guilds = json.loads(await websocket.recv())
+    except ConnectionRefusedError:
+        raise WebsocketUnavailable
 
     for guild in guilds:
         if guild['icon']:
