@@ -64,7 +64,12 @@ async def get_guilds():
             "owner": guild.owner.name,
             "member_count": guild.member_count,
             "icon": guild.icon.url if guild.icon else None,
-
+            "members": [
+                {
+                    "login": member.name,
+                    "nickname": member.nick,
+                } for member in guild.members
+            ],
         }
         for guild in guilds
     ]

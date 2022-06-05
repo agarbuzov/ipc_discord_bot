@@ -140,9 +140,9 @@ async def get_guilds(request: Request, authorize=Depends(is_authorized)):
     except ConnectionRefusedError:
         raise WebsocketUnavailable
 
-    for guild in guilds:
-        if guild['icon']:
-            guild.update(get_dominated_colors(guild['icon']))
+    # for guild in guilds:
+    #     if guild['icon']:
+    #         guild.update(get_dominated_colors(guild['icon']))
 
     return templates.TemplateResponse("guilds.html", {"request": request, 'guilds': guilds})
 

@@ -50,7 +50,7 @@ async def get_user_icon(user_id):
     return url
 
 
-def get_dominated_colors(image_url, numcolors=2, resize=150):
+def get_dominated_colors(image_url, numcolors=3, resize=150):
     response = requests.get(image_url)
 
     img = Image.open(BytesIO(response.content))

@@ -300,3 +300,8 @@ fill:  #ced4da;
   height: 100px!important;
   object-fit: cover;
 }
+
+.testimonial-card:hover {
+    background: lightgrey;
+    transform: scale(1.1);
+}
