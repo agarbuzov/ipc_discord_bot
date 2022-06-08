@@ -21,9 +21,8 @@ class WebSocket:
     def add_event(self, func) -> None:
         self.events.update({func.__name__: func})
 
-    def serve(self) -> websockets.WebSocketServer:
-        websocket = websockets.serve(self.processor, self.host, self.port)
-        return websocket
+    async def serve(self) -> websockets.WebSocketServer:
+        await websockets.serve(self.processor, self.host, self.port)
 
     async def processor(self, websocket) -> None:
         async for message in websocket:

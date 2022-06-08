@@ -20,9 +20,9 @@ async def on_ready():
     print(f'Bot {bot.user} is online')
 
 
-@bot.event
-async def on_socket_raw_receive(msg):
-    logger.debug(json.dumps(json.loads(msg), indent=4, ensure_ascii=False))
+# @bot.event
+# async def on_socket_raw_receive(msg):
+#     logger.debug(json.dumps(json.loads(msg), indent=4, ensure_ascii=False))
 
 
 @bot.command(name="send")
@@ -63,7 +63,7 @@ async def get_guilds():
             "name": guild.name,
             "owner": guild.owner.name,
             "member_count": guild.member_count,
-            "icon": guild.icon.url if guild.icon else None,
+            "icon": guild.icon.with_size(128).url if guild.icon else None,
             "members": [
                 {
                     "login": member.name,
@@ -76,8 +76,15 @@ async def get_guilds():
     return json.dumps(response, ensure_ascii=False)
 
 
+async def main():
+    # async with websocket: # Need define __aexit__ method
+    #     await websocket.serve()
+    await websocket.serve()
+    async with bot:
+        await bot.add_cog(MusicPlayer(bot))
+        await bot.add_cog(Notification())
+        await bot.start(settings.BOT_TOKEN)
+
+
 if __name__ == '__main__':
-    bot.add_cog(MusicPlayer(bot))
-    bot.add_cog(Notification())
-    asyncio.get_event_loop().run_until_complete(websocket.serve())
-    bot.run(settings.BOT_TOKEN)
+    asyncio.run(main())

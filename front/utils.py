@@ -46,7 +46,7 @@ async def get_user_guilds(token_type, token):
 
 async def get_user_icon(user_id):
     avatar = session.query(User).get(user_id).avatar
-    url = f"https://cdn.discordapp.com/avatars/{user_id}/{avatar}.png?size=64"
+    url = f"https://cdn.discordapp.com/avatars/{user_id}/{avatar}.png?size=128"
     return url
 
 
@@ -68,3 +68,8 @@ def get_dominated_colors(image_url, numcolors=3, resize=150):
         colors.append(tuple(dominant_color))
 
     return {'colors': colors}
+
+
+def add_colors(guild: dict):
+    color = get_dominated_colors(guild['icon'])
+    guild.update(color)

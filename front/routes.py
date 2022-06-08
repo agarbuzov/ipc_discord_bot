@@ -26,7 +26,7 @@ from front import templates
 from front.utils import get_token
 from front.utils import get_user
 from front.utils import get_user_guilds
-from front.utils import get_dominated_colors
+from front.utils import add_colors
 from front.dependecies import is_authorized
 from front.exceptions import WebsocketUnavailable
 
@@ -140,9 +140,9 @@ async def get_guilds(request: Request, authorize=Depends(is_authorized)):
     except ConnectionRefusedError:
         raise WebsocketUnavailable
 
-    # for guild in guilds:
-    #     if guild['icon']:
-    #         guild.update(get_dominated_colors(guild['icon']))
+    loop = asyncio.get_event_loop()
+    futures = [loop.run_in_executor(None, add_colors, guild) for guild in guilds if guild['icon']]
+    await asyncio.gather(*futures)
 
     return templates.TemplateResponse("guilds.html", {"request": request, 'guilds': guilds})
 
