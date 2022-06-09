@@ -3,8 +3,8 @@
 {% block body %}
     <body class="position-relative " style="background: linear-gradient(to left, #334257, #476072);">
         <div class="d-flex flex-column align-items-center position-absolute w-50 top-50 start-50 translate-middle">
-            <div class="display-1 text-white">403</div>
-            <div class="display-6 text-white">You are not allowed to enter here</div>
+            <div class="display-1 text-white">{{ status_code }}</div>
+            <div class="display-6 text-white">{{ message }}</div>
         </div>
     </body>
 {% endblock %}

@@ -4,12 +4,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from front.routes import router
-from front.exceptions import Forbidden
+from front.exceptions import HTTPException
 from front.middleware import set_user
-from front.handlers import forbidden_handler
+from front.handlers import error_handler
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="front/static"), name="static")
 app.add_middleware(BaseHTTPMiddleware, dispatch=set_user)
-app.add_exception_handler(Forbidden, forbidden_handler)
+app.add_exception_handler(HTTPException, error_handler)
 app.include_router(router)
