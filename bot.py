@@ -20,9 +20,9 @@ async def on_ready():
     print(f'Bot {bot.user} is online')
 
 
-# @bot.event
-# async def on_socket_raw_receive(msg):
-#     logger.debug(json.dumps(json.loads(msg), indent=4, ensure_ascii=False))
+@bot.event
+async def on_socket_raw_receive(msg):
+    logger.debug(json.dumps(json.loads(msg), indent=4, ensure_ascii=False))
 
 
 @bot.command(name="send")
@@ -32,7 +32,7 @@ async def _send(ctx: commands.Context, *, query: str):
     """
     await ctx.send(query)
 
-websocket = WebSocket('0.0.0.0', 5001)
+websocket = WebSocket('127.0.0.1', 5001)
 
 
 @websocket.add_event
