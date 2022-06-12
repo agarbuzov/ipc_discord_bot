@@ -1,6 +1,7 @@
 import json
 import base64
 import asyncio
+import datetime
 import functools
 import websockets
 
@@ -46,7 +47,7 @@ async def history(request: Request, authorize=Depends(is_authorized)):
 
 @router.get("/playlists/", response_class=HTMLResponse)
 async def playlists(request: Request, authorize=Depends(is_authorized)):
-    playlists_ = session.query(Playlist).all()
+    playlists_ = session.query(Playlist).order_by(Playlist.id.desc()).all()
     return templates.TemplateResponse("playlists.html", {"request": request, "playlists": playlists_})
 
 
@@ -55,16 +56,20 @@ async def playlist_create(request: Request, authorize=Depends(is_authorized)):
     return templates.TemplateResponse("playlist_create.html", {"request": request})
 
 
-@router.post("/playlists/create/", response_class=RedirectResponse, status_code=302)
+@router.post("/playlists/create/")
 async def playlist_create_post(request: Request, authorize=Depends(is_authorized), name: str = Form(),
                                tracks: list = Form(), cover: UploadFile = File()):
+    tracks = json.loads(tracks[0])
     author = request.state.session.user.id
     b64_cover = base64.b64encode(await cover.read())
-    playlist = Playlist(name=name, creator_id=author, tracks=[Track(url=track) for track in tracks],
-                        cover=b64_cover.decode('utf-8'), cover_type=cover.content_type)
+    playlist = Playlist(name=name, creator_id=author, tracks=[Track(
+        url=track.get("url"),
+        name=track.get("title"),
+        duration=track.get("duration")
+    ) for track in tracks if track.get('url')], cover=b64_cover.decode('utf-8'), cover_type=cover.content_type)
     session.add(playlist)
     session.commit()
-    return '/playlists/'
+    return "/playlists"
 
 
 @router.get("/auth/")
@@ -108,14 +113,16 @@ async def auth(code: str):
 async def search(count: int, query: str, authorize=Depends(is_authorized)):
     partial = functools.partial(ytdl.extract_info, f'ytsearch{count}:{query}', download=False)
     data = await asyncio.get_event_loop().run_in_executor(None, partial)
-    result = [
-        {
-            'url': f'https://www.youtube.com/watch?v={track.get("id")}',
-            'title': track.get('title') if len(track.get('title')) < 50 else track.get('title')[:50] + '...'
-        }
-        for track in data.get('entries')
-    ]
-    return result
+    if data:
+        result = [
+            {
+                "url": f"https://www.youtube.com/watch?v={track.get('id')}",
+                "title": track.get("title") if len(track.get("title")) < 50 else track.get("title")[:50] + "...",
+                "duration": str(datetime.timedelta(seconds=track['duration']))
+            }
+            for track in data.get("entries") if track.get("duration")
+        ]
+        return result
 
 
 @router.get("/play/")

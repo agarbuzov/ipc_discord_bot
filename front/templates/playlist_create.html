@@ -8,35 +8,32 @@
 
         <div>
             <div class="container float-start">
-                <form action="/playlists/create/" method="post" enctype="multipart/form-data">
-                    <div class="input-group">
-                        <div class="input-group mb-3">
-                            <span class="input-group-text">Playlist name</span>
-                            <input type="text" class="form-control" name="name" placeholder="Playlist name">
-                        </div>
+                <form action="/playlists/create/" method="post" enctype="multipart/form-data" id="track_list">
 
-                        <img src="{{ url_for('static', path='images/playlist_cover.png') }}"
-                             class="img-thumbnail img-fluid rounded float-start mb-3"
-                             style="width: 250px; height: 250px; object-fit: cover;" id="filePreview">
-
-                        <div class="input-group mb-3">
-                            <label class="input-group-text" for="inputImageFile">Playlist cover</label>
-                            <input type="file" class="form-control" name="cover" id="inputImageFile">
-                        </div>
-
-                        <div class="input-group mb-3">
-                            <span class="input-group-text">1</span>
-                            <input type="text" class="form-control" name="tracks" placeholder="https://www.youtube.com/...">
-                        </div>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Playlist name</span>
+                        <input type="text" class="form-control" name="name" placeholder="Playlist name" required>
                     </div>
 
-                    <div class="justify-content-between align-items-center d-flex">
+                    <img src="{{ url_for('static', path='images/playlist_cover.png') }}"
+                         class="img-thumbnail img-fluid rounded float-start mb-3"
+                         style="width: 250px; height: 250px; object-fit: cover;" id="filePreview">
 
-                        <div>
-                            <button type="button" class="btn btn-secondary add me-3">Add new</button>
-                            <button type="button" class="btn btn-danger remove">Remove last</button>
+                    <div class="input-group mb-3">
+                        <label class="input-group-text" for="inputImageFile">Playlist cover</label>
+                        <input type="file" class="form-control" name="cover" id="inputImageFile" required>
+                    </div>
+
+                    <div class="input-group mb-3" style="align-items: flex-start; justify-content: flex-end; position: relative" id="track_input">
+                        <span class="input-group-text">1</span>
+                        <input type="text" class="form-control track-input yt-search" name="track" placeholder="https://www.youtube.com/..." autocomplete="off">
+                        <div style="z-index: 3; border-radius: 50%; display: none; margin-top: 3px; margin-right: 3px" class="position-absolute spinner-border text-secondary" role="status">
+                          <span class="visually-hidden"></span>
                         </div>
+                        <div class="dropdown-menu position-static" style="width: 100%; display: none"></div>
+                    </div>
 
+                    <div class="justify-content-between align-items-center d-flex" id="list_buttons">
                         <button type="submit" class="btn btn-success">Create Playlist</button>
                     </div>
                 </form>
