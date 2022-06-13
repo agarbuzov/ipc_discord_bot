@@ -59,17 +59,19 @@ async def playlist_create(request: Request, authorize=Depends(is_authorized)):
 @router.post("/playlists/create/")
 async def playlist_create_post(request: Request, authorize=Depends(is_authorized), name: str = Form(),
                                tracks: list = Form(), cover: UploadFile = File()):
-    tracks = json.loads(tracks[0])
     author = request.state.session.user.id
     b64_cover = base64.b64encode(await cover.read())
-    playlist = Playlist(name=name, creator_id=author, tracks=[Track(
-        url=track.get("url"),
-        name=track.get("title"),
-        duration=track.get("duration")
-    ) for track in tracks if track.get('url')], cover=b64_cover.decode('utf-8'), cover_type=cover.content_type)
+    track_list = []
+    for track in tracks:
+        if track:
+            track = json.loads(track)
+            if track.get("url"):
+                track_list.append(Track(url=track.get("url"), name=track.get("title"), duration=track.get("duration")))
+    playlist = Playlist(name=name, creator_id=author, tracks=track_list,
+                        cover=b64_cover.decode('utf-8'), cover_type=cover.content_type)
     session.add(playlist)
     session.commit()
-    return "/playlists"
+    return RedirectResponse("/playlists", status_code=302)
 
 
 @router.get("/auth/")
