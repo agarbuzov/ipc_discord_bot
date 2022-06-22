@@ -9,12 +9,9 @@
   - > Youtubedl cache set to False
 - ~~Playlists~~
 - Multi use command play from one user -> Nonetype search
-- Asyncio tasks are not canceled after bot leaving from voice
-- Add move to another voice channel if guild.id=guild.id
-- fix One queue for all servers
-- Split play between guilds
-- On error message already deleted
-- Show track duration
+- ~~Add move to another voice channel if guild.id=guild.id~~
+- ~~Split play between guilds~~
+- Show added track duration
 - Recreate control panel message if not exist
 - ~~Repeat all queue~~
 

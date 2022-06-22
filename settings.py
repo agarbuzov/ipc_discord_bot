@@ -3,8 +3,9 @@ FFMPEG_OPTIONS = {
     'options': '-vn',
 }
 
-# Discord bot token
+# Discord bot settings
 BOT_TOKEN = ""
+DEBUG = False
 
 # Telegram bot credentials
 TELEGRAM_TOKEN = ""

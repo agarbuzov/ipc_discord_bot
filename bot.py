@@ -20,9 +20,10 @@ async def on_ready():
     print(f'Bot {bot.user} is online')
 
 
-@bot.event
-async def on_socket_raw_receive(msg):
-    logger.debug(json.dumps(json.loads(msg), indent=4, ensure_ascii=False))
+if settings.DEBUG:
+    @bot.event
+    async def on_socket_raw_receive(msg):
+        logger.debug(json.dumps(json.loads(msg), indent=4, ensure_ascii=False))
 
 
 @bot.command(name="send")

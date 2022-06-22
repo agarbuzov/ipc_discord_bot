@@ -1,11 +1,11 @@
+import sys
 import asyncio
 import inflect
 import discord
 import settings
 import functools
-import youtube_dl
 import traceback
-import sys
+import youtube_dl
 
 from sqlalchemy import and_
 from sqlalchemy import or_
@@ -263,7 +263,7 @@ class MusicPlayer(commands.Cog):
 
     async def prepare_voice_client(self, channel: discord.TextChannel, author: discord.Member):
 
-        with channel.typing():
+        async with channel.typing():
 
             if not self.voice_client:
                 # if not connected to some guild channel -> connect to author voice channel
@@ -300,7 +300,7 @@ class MusicPlayer(commands.Cog):
         """
         Add track to playlist
         """
-        with ctx.typing():
+        async with ctx.typing():
 
             playlist = await self.get_playlist(ctx, playlist_name)
 
