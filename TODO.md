@@ -21,3 +21,4 @@
 ## Vadim:
 - Pack in Docker
 - Accept attribute of the input (accept only image formats)
+- Write tests
