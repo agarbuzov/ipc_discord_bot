@@ -2,56 +2,76 @@
 
 {% block content %}
     <div class="container-fluid pt-4 px-4">
-        <div class="h-100 bg-secondary rounded p-4">
-            <div class="d-flex align-items-center justify-content-between mb-4">
-                <h6 class="mb-0">Notifications</h6>
-                <a class="btn btn-success" href="{{ url_for("notifications.create") }}">Create</a>
+        <div class="row g-4">
+            <div class="col-sm-12 col-xl-4">
+                <div class="h-100 bg-secondary rounded p-4">
+                    <h6 class="mb-4">Notification create</h6>
+                    <form autocomplete="off" method="post" action="{{ url_for("notifications.create") }}">
+                        <div class="row mb-2">
+                            <label for="" class="col-sm-3">Platform</label>
+                            <div class="col-sm-9">
+                                <select class="form-select form-select-sm mb-3" aria-label=".form-select-sm example"
+                                        name="platform" required>
+                                    <option disabled selected>Choose platform</option>
+                                    <option value="twitch">Twitch</option>
+                                    <option value="trovo">Trovo</option>
+                                    <option value="telegram">Telegram</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label for="" class="col-sm-3">Broadcaster</label>
+                            <div class="col-sm-9">
+                                <input class="form-control form-select-sm mb-3" name="broadcaster">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label for="" class="col-sm-3">Guild</label>
+                            <div class="col-sm-9">
+                                <input class="form-control form-select-sm mb-3" name="guild">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label for="" class="col-sm-3">Channel</label>
+                            <div class="col-sm-9">
+                                <input class="form-control form-select-sm mb-3" name="channel">
+                            </div>
+                        </div>
+                        <input type="submit" class="btn btn-success" value="Save">
+                        <a class="btn btn-primary" href="{{ url_for }}">Cancel</a>
+                    </form>
+                </div>
             </div>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                    <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Platform</th>
-                        <th scope="col">Guild</th>
-                        <th scope="col">Channel</th>
-                        <th scope="col">Broadcaster</th>
-                        <th scope="col">Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <th scope="row">1</th>
-                        <td>John</td>
-                        <td>Doe</td>
-                        <td>jhon@email.com</td>
-                        <td>USA</td>
-                        <td>
-                            <button class="btn btn-primary">Delete</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">2</th>
-                        <td>Mark</td>
-                        <td>Otto</td>
-                        <td>mark@email.com</td>
-                        <td>UK</td>
-                        <td>
-                            <button class="btn btn-primary">Delete</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">3</th>
-                        <td>Jacob</td>
-                        <td>Thornton</td>
-                        <td>jacob@email.com</td>
-                        <td>AU</td>
-                        <td>
-                            <button class="btn btn-primary">Delete</button>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+            <div class="col-sm-12 col-xl-8">
+                <div class="bg-secondary rounded h-100 p-4">
+                    <h6 class="mb-4">Notifications</h6>
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Platform</th>
+                            <th scope="col">Broadcaster</th>
+                            <th scope="col">Guild</th>
+                            <th scope="col">Channel</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for notification in notifications %}
+                            <tr class="align-middle">
+                                <th scope="row">{{ notification.id }}</th>
+                                <td>{{ notification.platform }}</td>
+                                <td>{{ notification.broadcaster_id }}</td>
+                                <td>{{ notification.guild_id }}</td>
+                                <td>{{ notification.channel_id }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary">Remove</button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

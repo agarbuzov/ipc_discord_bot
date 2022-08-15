@@ -11,7 +11,7 @@ from flask import Response
 from flask import render_template
 from flask.views import MethodView
 
-from front.base.utils import send_sock_msg
+from front.base.utils import send_socket_message
 from front.base.utils import discord_api_request
 from front.base.decorators import token_required
 
@@ -88,17 +88,3 @@ class Profile(MethodView):
     @staticmethod
     def get():
         pass
-
-
-class Test(MethodView):
-
-    @staticmethod
-    def post():
-        data = request.json
-        response = Response(data.get("challenge"), mimetype="text/plain")
-        return response
-
-    @staticmethod
-    def get():
-        response = send_sock_msg("send_notification")
-        return response, 200

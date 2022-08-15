@@ -20,7 +20,8 @@ class NotificationsIndex(MethodView):
     @staticmethod
     @token_required
     def get():
-        return render_template("notifications/index.html")
+        notifications = db_session.query(Notification).all()
+        return render_template("notifications/index.html", notifications=notifications)
 
 
 class NotificationsCreate(MethodView):

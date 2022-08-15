@@ -3,7 +3,7 @@ from flask import session
 from datetime import datetime
 from sqlalchemy import and_
 
-from front.base.utils import send_sock_msg
+from front.base.utils import send_socket_message
 
 from models import session as db_session
 from models import UserSession
@@ -22,5 +22,5 @@ def user_middleware():
 
 
 def bot_middleware():
-    bot_info = send_sock_msg("bot_info")
+    bot_info = send_socket_message("bot_info")
     session.bot = bot_info

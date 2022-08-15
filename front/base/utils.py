@@ -19,7 +19,7 @@ def discord_api_request(method, path, **kwargs) -> dict:
     return data
 
 
-def send_sock_msg(event, data=None) -> dict:
+def send_socket_message(event, data=None) -> dict:
     try:
         with closing(create_connection("ws://localhost:5005")) as ws:
             ws.send(json.dumps({"event": event, "data": data}))

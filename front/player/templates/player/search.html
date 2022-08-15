@@ -21,7 +21,7 @@
                         <div class="w-100 ms-3">
                             <div class="d-flex w-100 align-items-center">
                                 <img class="pe-2" src="{{ track.get("thumbnails")[0].get("url") }}"
-                                     width="100px">
+                                     width="112px" height="63px">
                                 <span class="w-100">
                                     <a href="{{ track.get("link") }}" target="_blank">{{ track.get("title") }}</a>
                                     {{ track.get("duration") }}
@@ -58,7 +58,6 @@
             icon.hide()
             let spinner = button.find(".spinner-border")
             spinner.show()
-
         })
     </script>
 {% endblock %}
