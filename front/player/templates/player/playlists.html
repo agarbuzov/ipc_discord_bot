@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container-fluid pt-4 px-4">
+        <div class="row">
+            <div class="col-sm-12 col-xl-12">
+                <div class="bg-secondary rounded h-100 p-4">
+                    {% for playlist in playlists %}
+                        <div class="d-flex align-items-center border-bottom py-2">
+                            <div class="w-100 ms-3">
+                                <div class="d-flex w-100 align-items-center">
+                                    <span class="w-100"><a href="{{ url_for("player.playlist", id=playlist.id) }}">{{ playlist.name }}</a></span>
+                                    <button title="Play now" class="btn btn-sm"><i class="fas fa-play"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

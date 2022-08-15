@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container-fluid pt-4 px-4">
+        <div class="bg-secondary rounded h-100 p-4">
+            <div class="d-flex mb-2">
+                <form class="d-flex w-100" method="post" action="{{ url_for("player.search") }}">
+                    <input type="text" class="form-control" placeholder="Search" name="query">
+                    <input type="submit" class="btn btn-primary ms-2" value="Search">
+                </form>
+            </div>
+
+
+
+
+
+            {% if result %}
+                {% for track in result %}
+                    <div class="d-flex align-items-center border-bottom py-2">
+                        <input class="form-check-input m-0" type="checkbox">
+                        <div class="w-100 ms-3">
+                            <div class="d-flex w-100 align-items-center">
+                                <img class="pe-2" src="{{ track.get("thumbnails")[0].get("url") }}"
+                                     width="100px">
+                                <span class="w-100">
+                                    <a href="{{ track.get("link") }}" target="_blank">{{ track.get("title") }}</a>
+                                    {{ track.get("duration") }}
+                                </span>
+                                <button title="Play now" class="btn btn-sm"><i class="fas fa-play"></i></button>
+                                <button title="Add to playlist" class="btn btn-sm playlist"
+                                        id="dropdownMenuButton1" data-bs-toggle="dropdown"
+                                        aria-expanded="false"><i class="fas fa-plus"></i>
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"
+                                          style="display: none"></span>
+                                </button>
+                                <ul class="dropdown-menu bg-secondary" aria-labelledby="dropdownMenuButton1">
+                                    <li><a class="dropdown-item playlist" href="#">Action</a></li>
+                                    <li><a class="dropdown-item" href="#">Another action</a></li>
+                                    <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        $("a.playlist").on("click", function () {
+            let button = $(this).closest("div").find("button.playlist")
+            let icon = button.find("i")
+            icon.hide()
+            let spinner = button.find(".spinner-border")
+            spinner.show()
+
+        })
+    </script>
+{% endblock %}

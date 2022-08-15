@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container-fluid pt-4 px-4">
+        <div class="h-100 bg-secondary rounded p-4">
+            <h6 class="mb-4">Notification create</h6>
+            <form autocomplete="off" method="post" action="{{ url_for("notifications.create") }}">
+                <div class="row mb-2">
+                    <label for="" class="col-sm-1">Platform</label>
+                    <div class="col-sm-4">
+                        <select class="form-select form-select-sm mb-3" aria-label=".form-select-sm example"
+                                name="platform" required>
+                            <option disabled selected>Choose platform</option>
+                            <option value="twitch">Twitch</option>
+                            <option value="trovo">Trovo</option>
+                            <option value="telegram">Telegram</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="" class="col-sm-1">Broadcaster</label>
+                    <div class="col-sm-4">
+                        <input class="form-control form-select-sm mb-3" name="broadcaster">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="" class="col-sm-1">Guild</label>
+                    <div class="col-sm-4">
+                        <input class="form-control form-select-sm mb-3" name="guild">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="" class="col-sm-1">Channel</label>
+                    <div class="col-sm-4">
+                        <input class="form-control form-select-sm mb-3" name="channel">
+                    </div>
+                </div>
+                <input type="submit" class="btn btn-success" value="Save">
+                <a class="btn btn-primary" href="{{ url_for }}">Cancel</a>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

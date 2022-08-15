@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container-fluid pt-4 px-4">
+        <div class="h-100 bg-secondary rounded p-4">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h6 class="mb-0">Notifications</h6>
+                <a class="btn btn-success" href="{{ url_for("notifications.create") }}">Create</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Platform</th>
+                        <th scope="col">Guild</th>
+                        <th scope="col">Channel</th>
+                        <th scope="col">Broadcaster</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <th scope="row">1</th>
+                        <td>John</td>
+                        <td>Doe</td>
+                        <td>jhon@email.com</td>
+                        <td>USA</td>
+                        <td>
+                            <button class="btn btn-primary">Delete</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">2</th>
+                        <td>Mark</td>
+                        <td>Otto</td>
+                        <td>mark@email.com</td>
+                        <td>UK</td>
+                        <td>
+                            <button class="btn btn-primary">Delete</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">3</th>
+                        <td>Jacob</td>
+                        <td>Thornton</td>
+                        <td>jacob@email.com</td>
+                        <td>AU</td>
+                        <td>
+                            <button class="btn btn-primary">Delete</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
