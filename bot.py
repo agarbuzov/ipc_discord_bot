@@ -6,7 +6,6 @@ import logging
 import discord
 import settings
 
-
 from discord.ext.commands import Bot
 from discord_bot.websocket import WebSocket
 from discord_bot.notification import Notifications
@@ -37,8 +36,9 @@ async def on_ready():
 
 
 @websocket.add_event
-async def send_notification():
-    await bot.cogs['Notifications'].send_notification(63813769)
+async def send_notification(data):
+    broadcaster_id = data.get("broadcaster_id")
+    await bot.cogs['Notifications'].send_notification(broadcaster_id)
 
 
 @websocket.add_event
