@@ -16,10 +16,14 @@ def twitch_api_request(method, path, status_code=200, **kwargs) -> dict:
         "Authorization": "Bearer t5rf3fk0r7do0lelpy0o275en66q98"
     }
     response = requests.request(method, url, headers=headers, **kwargs)
-    data = response.json()
+    content_type = response.headers.get("Content-Type", "")
+    if "application/json" in content_type:
+        data = response.json()
+    else:
+        data = None
     if response.status_code != status_code:
         error = data.get("message")
-        raise BadRequest(error)
+        raise BadRequest(f"Twitch request error: {error}")
     return data
 
 

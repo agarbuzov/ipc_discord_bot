@@ -54,7 +54,6 @@ class NotificationsDelete(MethodView):
 class NotificationsReceive(MethodView):
 
     @staticmethod
-    @token_required
     def post(platform):
         if platform == "twitch":
             response = TwitchEventReceive(request).execute()

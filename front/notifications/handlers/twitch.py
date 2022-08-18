@@ -20,7 +20,7 @@ from front.base.utils import send_socket_message
 from front.notifications.utils import twitch_api_request
 
 from werkzeug import Response
-from werkzeug.exceptions import Forbidden
+from werkzeug.exceptions import NotFound
 from werkzeug.exceptions import BadRequest
 
 
@@ -65,6 +65,7 @@ class TwitchEventReceive:
     def _process_revocation(self) -> None:
         identifier = self._request.json.get("subscription", {}).get("id")
         db_session.query(Notification).filter_by(identifier=identifier).delete()
+        db_session.commit()
         self._request = ("", 204)
 
 
@@ -143,9 +144,12 @@ class TwitchEventDelete:
     def _check_user(self) -> None:
         record = db_session.query(Notification).filter(
             and_(Notification.identifier == self._id, Notification.creator_id == self._creator_id)
-        )
+        ).delete()
+
         if not record:
-            raise Forbidden
+            raise NotFound
+
+        db_session.commit()
 
     def _execute_request(self) -> None:
         self._response = twitch_api_request(
