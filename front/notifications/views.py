@@ -1,4 +1,3 @@
-from flask import session
 from flask import request
 from flask import render_template
 from flask.views import MethodView
@@ -9,6 +8,7 @@ from models import Notification
 from front.base.decorators import token_required
 
 from front.notifications.handlers.twitch import TwitchEventCreate
+from front.notifications.handlers.twitch import TwitchEventDelete
 from front.notifications.handlers.twitch import TwitchEventReceive
 
 from werkzeug.exceptions import BadRequest
@@ -39,17 +39,22 @@ class NotificationsCreate(MethodView):
 
 class NotificationsDelete(MethodView):
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.platform = request.form.get("platform")
-        self.user_id = session.user.id
 
+    @token_required
     def post(self):
-        return "", 200
+        if self.platform == "twitch":
+            response = TwitchEventDelete(request).execute()
+        else:
+            raise BadRequest("Unsupported platform")
+        return response
 
 
 class NotificationsReceive(MethodView):
 
     @staticmethod
+    @token_required
     def post(platform):
         if platform == "twitch":
             response = TwitchEventReceive(request).execute()

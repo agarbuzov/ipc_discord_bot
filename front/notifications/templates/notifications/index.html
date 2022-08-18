@@ -64,7 +64,11 @@
                                 <td>{{ notification.guild_id }}</td>
                                 <td>{{ notification.channel_id }}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-primary">Remove</button>
+                                    <form method="post" action="{{ url_for("notifications.delete") }}">
+                                    <input type="hidden" name="id" value="{{ notification.identifier }}">
+                                    <input type="hidden" name="platform" value="{{ notification.platform }}">
+                                    <input type="submit" class="btn btn-sm btn-primary" value="Remove">
+                                        </form>
                                 </td>
                             </tr>
                         {% endfor %}

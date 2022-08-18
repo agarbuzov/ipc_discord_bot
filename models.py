@@ -81,6 +81,7 @@ class Playlist(Base):
     creator_id = Column(BigInteger, ForeignKey("user.id"))
     creator = relationship("User")
     tracks = relationship("Track", backref=backref("playlist"), cascade="all,delete")
+    guild_id = Column(BigInteger, ForeignKey("guild.id"))
 
 
 class Track(Base):

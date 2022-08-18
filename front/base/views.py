@@ -86,5 +86,6 @@ class Logout(MethodView):
 class Profile(MethodView):
 
     @staticmethod
+    @token_required
     def get():
         pass

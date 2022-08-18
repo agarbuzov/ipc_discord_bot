@@ -6,6 +6,8 @@ from flask import session
 from flask import url_for
 from flask import redirect
 
+from sqlalchemy import and_
+
 from models import session as db_session
 from models import Notification
 
@@ -18,6 +20,7 @@ from front.base.utils import send_socket_message
 from front.notifications.utils import twitch_api_request
 
 from werkzeug import Response
+from werkzeug.exceptions import Forbidden
 from werkzeug.exceptions import BadRequest
 
 
@@ -73,11 +76,11 @@ class TwitchEventCreate:
         self._guild: int = request.form.get("guild")
         self._channel: int = request.form.get("channel")
         self._broadcaster: int = request.form.get("broadcaster")
+        self._creator_id: Optional[int] = session.user.id
         self._data: Optional[dict] = None
         self._response: Optional[dict] = None
-        self._result = None
 
-    def execute(self):
+    def execute(self) -> Response:
         self._build_request()
         self._execute_request()
         self._save_record()
@@ -113,7 +116,38 @@ class TwitchEventCreate:
             channel_id=self._channel,
             broadcaster_id=self._broadcaster,
             body=self._body,
-            creator_id=session.user.id
+            creator_id=self._creator_id
         )
         db_session.add(notification)
         db_session.commit()
+
+
+class TwitchEventDelete:
+
+    def __init__(self, request) -> None:
+        self._id: int = request.form.get("id")
+        self._data: Optional[dict] = None
+        self._creator_id: Optional[int] = session.user.id
+
+    def execute(self) -> Response:
+        self._check_user()
+        self._build_request()
+        self._execute_request()
+        return redirect(url_for("notifications.index"))
+
+    def _build_request(self) -> None:
+        self._data = {
+            "id": self._id
+        }
+
+    def _check_user(self) -> None:
+        record = db_session.query(Notification).filter(
+            and_(Notification.identifier == self._id, Notification.creator_id == self._creator_id)
+        )
+        if not record:
+            raise Forbidden
+
+    def _execute_request(self) -> None:
+        self._response = twitch_api_request(
+            "delete", "/eventsub/subscriptions", 204, params=self._data
+        )
