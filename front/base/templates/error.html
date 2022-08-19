@@ -8,6 +8,7 @@
                 <h1 class="display-1 fw-bold">{{ error.code }}</h1>
                 <h1 class="mb-4">{{ error.name }}</h1>
                 <p class="mb-4">{{ error.description }}</p>
+                <a class="btn btn-primary rounded-pill py-3 px-5" href="{% if request.referrer %}{{ request.referrer }}{% else %}{{ url_for("index") }}{% endif %}">Go Back</a>
             </div>
         </div>
     </div>

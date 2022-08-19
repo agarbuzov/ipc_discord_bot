@@ -21,6 +21,8 @@ from sqlalchemy.sql import func
 
 from sqlalchemy.ext.declarative import declarative_base
 
+from front.notifications.utils import twitch_api_request
+
 engine = create_engine("sqlite:///discord.db", connect_args={"check_same_thread": False},
                        poolclass=StaticPool, echo=False)
 Base = declarative_base()
@@ -118,3 +120,17 @@ class Notification(Base):
     __table_args__ = (
         UniqueConstraint("broadcaster_id", "guild_id", "channel_id"),
     )
+
+    def get_broadcaster_login(self):
+        if self.platform == "twitch":
+            return self._get_twitch_login()
+        else:
+            return None
+
+    def _get_twitch_login(self):
+        data = {"id": self.broadcaster_id}
+        response = twitch_api_request(
+            "get", "/users/", params=data
+        )
+        login = response.get("data", [{}])[0].get("login")
+        return login

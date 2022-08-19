@@ -76,23 +76,35 @@ class TwitchEventCreate:
         self._body = request.form.get("body")
         self._guild: int = request.form.get("guild")
         self._channel: int = request.form.get("channel")
-        self._broadcaster: int = request.form.get("broadcaster")
+        self._broadcaster: str = request.form.get("broadcaster")
         self._creator_id: Optional[int] = session.user.id
         self._data: Optional[dict] = None
         self._response: Optional[dict] = None
+        self._broadcaster_id: Optional[int] = None
 
     def execute(self) -> Response:
+        self._get_broadcaster_id()
         self._build_request()
         self._execute_request()
         self._save_record()
         return redirect(url_for("notifications.index"))
+
+    def _get_broadcaster_id(self) -> None:
+        data = {"login": self._broadcaster}
+        response = twitch_api_request(
+            "get", "/users/", params=data
+        )
+        broadcaster_id = response.get("data", [{}])[0].get("id")
+        if not broadcaster_id:
+            raise NotFound("Twitch user with such nickname not found")
+        self._broadcaster_id = broadcaster_id
 
     def _build_request(self) -> None:
         self._data = {
             "type": "stream.online",
             "version": "1",
             "condition": {
-                "broadcaster_user_id": self._broadcaster
+                "broadcaster_user_id": self._broadcaster_id
             },
             "transport": {
                 "method": "webhook",
@@ -115,7 +127,7 @@ class TwitchEventCreate:
             platform=self._platform,
             guild_id=self._guild,
             channel_id=self._channel,
-            broadcaster_id=self._broadcaster,
+            broadcaster_id=self._broadcaster_id,
             body=self._body,
             creator_id=self._creator_id
         )

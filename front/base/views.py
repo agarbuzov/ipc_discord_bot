@@ -32,6 +32,8 @@ class Login(MethodView):
 
     @staticmethod
     def get():
+        if session.get("token"):
+            return redirect(url_for("index"))
         client_id = settings.DISCORD_CLIENT_ID
         return render_template("login.html", client_id=client_id)
 

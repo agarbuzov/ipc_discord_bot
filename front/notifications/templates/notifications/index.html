@@ -3,15 +3,15 @@
 {% block content %}
     <div class="container-fluid pt-4 px-4">
         <div class="row g-4">
-            <div class="col-sm-12 col-xl-4">
+            <div class="col-12">
                 <div class="h-100 bg-secondary rounded p-4">
                     <h6 class="mb-4">Notification create</h6>
                     <form autocomplete="off" method="post" action="{{ url_for("notifications.create") }}">
-                        <div class="row mb-2">
-                            <label for="" class="col-sm-3">Platform</label>
+                        <div class="row mb-3">
+                            <label for="platform" class="col-sm-3 col-form-label">Platform</label>
                             <div class="col-sm-9">
-                                <select class="form-select form-select-sm mb-3" aria-label=".form-select-sm example"
-                                        name="platform" required>
+                                <select class="form-select" name="platform" id="platform" required>
+                                    <option hidden disabled selected value> -- select platform --</option>
                                     <option value="twitch">Twitch</option>
                                     <option value="trovo">Trovo</option>
                                     <option value="telegram">Telegram</option>
@@ -19,61 +19,69 @@
                             </div>
                         </div>
                         <div class="row mb-3">
-                            <label for="" class="col-sm-3">Broadcaster</label>
+                            <label for="broadcaster" class="col-sm-3 col-form-label">Broadcaster login</label>
                             <div class="col-sm-9">
-                                <input class="form-control form-select-sm mb-3" name="broadcaster">
+                                <input class="form-control" name="broadcaster" id="broadcaster" required>
                             </div>
                         </div>
                         <div class="row mb-3">
-                            <label for="" class="col-sm-3">Guild</label>
+                            <label for="guild" class="col-sm-3 col-form-label">Guild</label>
                             <div class="col-sm-9">
-                                <input class="form-control form-select-sm mb-3" name="guild">
+                                <input class="form-control" name="guild" id="guild" required>
                             </div>
                         </div>
                         <div class="row mb-3">
-                            <label for="" class="col-sm-3">Channel</label>
+                            <label for="channel" class="col-sm-3 col-form-label">Channel</label>
                             <div class="col-sm-9">
-                                <input class="form-control form-select-sm mb-3" name="channel">
+                                <input class="form-control" name="channel" id="channel" required>
                             </div>
                         </div>
                         <input type="submit" class="btn btn-success" value="Save">
-                        <a class="btn btn-primary" href="{{ url_for }}">Cancel</a>
+                        <a class="btn btn-primary" href="{{ url_for("notifications.index") }}">Cancel</a>
                     </form>
                 </div>
             </div>
-            <div class="col-sm-12 col-xl-8">
+            <div class="col-12">
                 <div class="bg-secondary rounded h-100 p-4">
                     <h6 class="mb-4">Notifications</h6>
-                    <table class="table table-striped">
-                        <thead>
-                        <tr>
-                            <th scope="col">#</th>
-                            <th scope="col">Platform</th>
-                            <th scope="col">Broadcaster</th>
-                            <th scope="col">Guild</th>
-                            <th scope="col">Channel</th>
-                            <th scope="col">Action</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for notification in notifications %}
-                            <tr class="align-middle">
-                                <th scope="row">{{ notification.id }}</th>
-                                <td>{{ notification.platform }}</td>
-                                <td>{{ notification.broadcaster_id }}</td>
-                                <td>{{ notification.guild_id }}</td>
-                                <td>{{ notification.channel_id }}</td>
-                                <td>
-                                    <form method="post" action="{{ url_for("notifications.delete") }}">
-                                    <input type="hidden" name="id" value="{{ notification.identifier }}">
-                                    <input type="hidden" name="platform" value="{{ notification.platform }}">
-                                    <input type="submit" class="btn btn-sm btn-primary" value="Remove">
-                                        </form>
-                                </td>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Platform</th>
+                                <th scope="col">Broadcaster</th>
+                                <th scope="col">Guild</th>
+                                <th scope="col">Channel</th>
+                                <th scope="col">Action</th>
                             </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                            {% for notification in notifications %}
+                                {% set login = notification.get_broadcaster_login() %}
+                                <tr class="align-middle">
+                                    <th scope="row">{{ notification.id }}</th>
+                                    <td>{{ notification.platform }}</td>
+                                    <td><a href="https://twitch.tv/{{ notification.get_broadcaster_login() }}" target="_blank">{{ login }}</a></td>
+                                    <td><a href="https://discord.com/channels/{{ notification.guild_id }}" target="_blank">{{ notification.guild_id }}</a></td>
+                                    <td><a href="https://discord.com/channels/{{ notification.guild_id }}/{{ notification.channel_id }}" target="_blank">{{ notification.channel_id }}</a></td>
+                                    <td>
+                                        <form method="post" action="{{ url_for("notifications.delete") }}">
+                                            <input type="hidden" name="id" value="{{ notification.identifier }}">
+                                            <input type="hidden" name="platform" value="{{ notification.platform }}">
+                                            <input type="submit" class="btn btn-sm btn-primary" value="Remove">
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                        {% if not notifications %}
+                                <div class="text-center">
+                                    <div>You don't have notifications</div>
+                                </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
