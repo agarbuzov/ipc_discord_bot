@@ -55,7 +55,7 @@ class TwitchEventReceive:
 
     def _process_notification(self) -> None:
         broadcaster_id = self._request.json.get("event", {}).get("broadcaster_user_id")
-        send_socket_message({"event": "send_notification", "data": {"broadcaster_id": broadcaster_id}})
+        send_socket_message("send_notification", {"broadcaster_id": broadcaster_id})
         self._result = ("", 204)
 
     def _process_verification(self) -> None:
@@ -73,10 +73,10 @@ class TwitchEventCreate:
 
     def __init__(self, request) -> None:
         self._platform: str = "twitch"
-        self._body = request.form.get("body")
         self._guild: int = request.form.get("guild")
         self._channel: int = request.form.get("channel")
         self._broadcaster: str = request.form.get("broadcaster")
+        self._message: str = request.form.get("message")
         self._creator_id: Optional[int] = session.user.id
         self._data: Optional[dict] = None
         self._response: Optional[dict] = None
@@ -128,7 +128,7 @@ class TwitchEventCreate:
             guild_id=self._guild,
             channel_id=self._channel,
             broadcaster_id=self._broadcaster_id,
-            body=self._body,
+            body=self._message,
             creator_id=self._creator_id
         )
         db_session.add(notification)

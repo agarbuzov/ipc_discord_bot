@@ -38,7 +38,9 @@ async def on_ready():
 @websocket.add_event
 async def send_notification(data):
     broadcaster_id = data.get("broadcaster_id")
-    await bot.cogs['Notifications'].send_notification(broadcaster_id)
+    notification = bot.get_cog("Notifications")
+    await notification.send(broadcaster_id)
+    return json.dumps({"message": "success"})
 
 
 @websocket.add_event

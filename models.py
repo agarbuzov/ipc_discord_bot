@@ -107,7 +107,7 @@ class History(Base):
 
 
 class Notification(Base):
-    __tablename__ = "notifications"
+    __tablename__ = "notification"
     id = Column(Integer, primary_key=True)
     identifier = Column(String)
     platform = Column(String)
@@ -121,7 +121,8 @@ class Notification(Base):
         UniqueConstraint("broadcaster_id", "guild_id", "channel_id"),
     )
 
-    def get_broadcaster_login(self):
+    @property
+    def broadcaster_login(self):
         if self.platform == "twitch":
             return self._get_twitch_login()
         else:

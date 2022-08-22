@@ -18,15 +18,14 @@ class Notifications(Cog):
         self.user_data: Optional[dict] = None
         self.category_data: Optional[dict] = None
         self.embed: Optional[Embed] = None
-        self.broadcaster_id: Optional[int] = None
 
-    async def get_stream_data(self):
-        params = {"user_id": self.broadcaster_id}
+    async def get_stream_data(self, broadcaster_id):
+        params = {"user_id": broadcaster_id}
         response = twitch_api_request("get", "/streams/", params=params)
         self.stream_data = response.get("data")[0]
 
-    async def get_user_data(self):
-        params = {"id": self.broadcaster_id}
+    async def get_user_data(self, broadcaster_id):
+        params = {"id": broadcaster_id}
         response = twitch_api_request("get", "/users/", params=params)
         self.user_data = response.get("data")[0]
 
@@ -48,10 +47,9 @@ class Notifications(Cog):
         self.embed.add_field(name="Категория", value=self.stream_data.get("game_name"))
         self.embed.add_field(name="Зрителей", value=self.stream_data.get("viewer_count"))
 
-    async def send_notification(self, broadcaster_id):
-        self.broadcaster_id = broadcaster_id
-        await self.get_stream_data()
-        await self.get_user_data()
+    async def send(self, broadcaster_id):
+        await self.get_stream_data(broadcaster_id)
+        await self.get_user_data(broadcaster_id)
         await self.get_category_data()
         await self.create_embed()
         targets = session.query(Notification).filter(Notification.broadcaster_id == broadcaster_id).all()
