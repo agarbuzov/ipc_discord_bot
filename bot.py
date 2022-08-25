@@ -9,6 +9,7 @@ import settings
 from discord.ext.commands import Bot
 from discord_bot.websocket import WebSocket
 from discord_bot.notification import Notifications
+from discord_bot.music import Music
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -35,6 +36,12 @@ async def on_ready():
     print(f'Bot {bot.user} is online')
 
 
+@bot.command()
+async def check(ctx):
+    music = bot.get_cog("Music")
+    print(music.players)
+
+
 @websocket.add_event
 async def send_notification(data):
     broadcaster_id = data.get("broadcaster_id")
@@ -55,6 +62,7 @@ async def bot_info():
 async def main():
     await websocket.serve()
     async with bot:
+        await bot.add_cog(Music(bot))
         await bot.add_cog(Notifications(bot))
         await bot.start(settings.BOT_TOKEN)
 
