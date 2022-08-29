@@ -9,7 +9,7 @@ from front.base.decorators import token_required
 
 from front.notifications.handlers.twitch import TwitchEventCreate
 from front.notifications.handlers.twitch import TwitchEventDelete
-from front.notifications.handlers.twitch import TwitchEventReceive
+from front.notifications.handlers.twitch import TwitchEventHandler
 
 from werkzeug.exceptions import BadRequest
 
@@ -51,12 +51,12 @@ class NotificationsDelete(MethodView):
         return response
 
 
-class NotificationsReceive(MethodView):
+class EventHandler(MethodView):
 
     @staticmethod
     def post(platform):
         if platform == "twitch":
-            response = TwitchEventReceive(request).execute()
+            response = TwitchEventHandler(request).execute()
         else:
             raise BadRequest("Unsupported platform")
         return response
