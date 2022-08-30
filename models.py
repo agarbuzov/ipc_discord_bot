@@ -8,7 +8,6 @@ from sqlalchemy import Integer
 from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
 from sqlalchemy import BigInteger
-from sqlalchemy import LargeBinary
 from sqlalchemy import UniqueConstraint
 from sqlalchemy import create_engine
 from sqlalchemy.pool import StaticPool
@@ -21,7 +20,7 @@ from sqlalchemy.sql import func
 
 from sqlalchemy.ext.declarative import declarative_base
 
-from front.notifications.utils import twitch_api_request
+from front.base.utils import twitch_api_request
 
 engine = create_engine("sqlite:///discord.db", connect_args={"check_same_thread": False},
                        poolclass=StaticPool, echo=False)

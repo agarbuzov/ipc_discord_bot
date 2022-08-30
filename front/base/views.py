@@ -7,17 +7,18 @@ from flask import redirect
 from flask import session
 from flask import url_for
 from flask import request
-from flask import Response
 from flask import render_template
 from flask.views import MethodView
 
-from front.base.utils import send_socket_message
 from front.base.utils import discord_api_request
 from front.base.decorators import token_required
+from front.base.events.handlers.twitch import TwitchEventHandler
 
 from models import User
 from models import UserSession
 from models import session as db_session
+
+from werkzeug.exceptions import BadRequest
 
 
 class Index(MethodView):
@@ -91,3 +92,14 @@ class Profile(MethodView):
     @token_required
     def get():
         pass
+
+
+class EventHandler(MethodView):
+
+    @staticmethod
+    def post(platform):
+        if platform == "twitch":
+            response = TwitchEventHandler(request).execute()
+        else:
+            raise BadRequest("Unsupported platform")
+        return response

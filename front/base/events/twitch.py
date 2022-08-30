@@ -11,14 +11,12 @@ from sqlalchemy import and_
 from models import session as db_session
 from models import Notification
 
-from typing import Type
 from typing import Union
 from typing import Tuple
 from typing import Optional
 from typing import Callable
 
-from front.base.utils import send_socket_message
-from front.notifications.utils import twitch_api_request
+from front.base.utils import twitch_api_request
 
 from werkzeug import Response
 from werkzeug import Request
@@ -105,7 +103,7 @@ class TwitchEventCreate:
             },
             "transport": {
                 "method": "webhook",
-                "callback": url_for("notifications.event_handler", platform="twitch", _external=True),
+                "callback": url_for("base.event_handler", platform="twitch", _external=True),
                 "secret": settings.SECRET_KEY
             }
         }
@@ -164,47 +162,3 @@ class TwitchEventDelete:
         self._response = twitch_api_request(
             "delete", "/eventsub/subscriptions", 204, params=self._data
         )
-
-
-class StreamOnline(TwitchEvent):
-
-    def __init__(self, request) -> None:
-        super().__init__(request)
-
-    def _handle_notification(self) -> None:
-        broadcaster_id = self._request.json.get("event", {}).get("broadcaster_user_id")
-        send_socket_message("send_notification", {"broadcaster_id": broadcaster_id})
-        self._result = ("", 204)
-
-    def _handle_revocation(self) -> None:
-        identifier = self._request.json.get("subscription", {}).get("id")
-        db_session.query(Notification).filter_by(identifier=identifier).delete()
-        db_session.commit()
-        self._result = ("", 204)
-
-
-class TwitchEventHandler:
-    _event_handlers = {
-        "stream.online": StreamOnline,
-    }
-
-    def __init__(self, request) -> None:
-        self._request = request
-        self._type: Optional[str] = None
-        self._handler: Optional[Type[TwitchEvent]] = None
-        self._result = None
-
-    def execute(self):
-        self._define_type()
-        self._define_handler()
-        return self._handler(self._request).execute()
-
-    def _define_type(self) -> None:
-        self._type = self._request.headers.get("Twitch-Eventsub-Subscription-Type")
-        if not self._type:
-            raise BadRequest("Twitch-Eventsub-Subscription-Type header is missing on request")
-
-    def _define_handler(self):
-        self._handler = self._event_handlers.get(self._type)
-        if not self._type:
-            raise BadRequest("Unsupported event type")

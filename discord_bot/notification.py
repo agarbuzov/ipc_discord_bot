@@ -7,7 +7,7 @@ from discord import Color
 from discord.ext.commands import Bot
 from discord.ext.commands import Cog
 
-from front.notifications.utils import twitch_api_request
+from front.base.utils import twitch_api_request
 
 
 class Notifications(Cog):
