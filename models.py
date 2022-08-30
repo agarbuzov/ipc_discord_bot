@@ -112,7 +112,8 @@ class Notification(Base):
     platform = Column(String)
     guild_id = Column(BigInteger)
     channel_id = Column(BigInteger)
-    broadcaster_id = Column(BigInteger)
+    broadcaster_id = Column(BigInteger, ForeignKey("broadcaster.id"))
+    broadcaster = relationship("Broadcaster")
     body = Column(String)
     creator_id = Column(BigInteger, ForeignKey('user.id'))
     creator = relationship("User")
@@ -120,17 +121,10 @@ class Notification(Base):
         UniqueConstraint("broadcaster_id", "guild_id", "channel_id"),
     )
 
-    @property
-    def broadcaster_login(self):
-        if self.platform == "twitch":
-            return self._get_twitch_login()
-        else:
-            return None
 
-    def _get_twitch_login(self):
-        data = {"id": self.broadcaster_id}
-        response = twitch_api_request(
-            "get", "/users/", params=data
-        )
-        login = response.get("data", [{}])[0].get("login")
-        return login
+class Broadcaster(Base):
+    __tablename__ = "broadcaster"
+    id = Column(BigInteger, primary_key=True)
+    login = Column(String)
+    name = Column(String)
+    identifier = Column(String)

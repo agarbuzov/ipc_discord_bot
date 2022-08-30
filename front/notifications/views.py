@@ -1,4 +1,7 @@
+from flask import url_for
+from flask import session
 from flask import request
+from flask import redirect
 from flask import render_template
 from flask.views import MethodView
 
@@ -7,8 +10,10 @@ from models import Notification
 
 from front.base.decorators import token_required
 
-from front.base.events.twitch import TwitchEventCreate
-from front.base.events.twitch import TwitchEventDelete
+from front.notifications.events.twitch import UserUpdateCreate
+from front.notifications.events.twitch import UserUpdateDelete
+from front.notifications.events.twitch import StreamOnlineCreate
+from front.notifications.events.twitch import StreamOnlineDelete
 
 from werkzeug.exceptions import BadRequest
 
@@ -18,7 +23,7 @@ class NotificationsIndex(MethodView):
     @staticmethod
     @token_required
     def get():
-        notifications = db_session.query(Notification).all()
+        notifications = db_session.query(Notification).filter_by(creator_id=session.user.id).all()
         return render_template("notifications/index.html", notifications=notifications)
 
 
@@ -30,10 +35,11 @@ class NotificationsCreate(MethodView):
     @token_required
     def post(self):
         if self.platform == "twitch":
-            response = TwitchEventCreate(request).execute()
+            UserUpdateCreate(request).execute()
+            StreamOnlineCreate(request).execute()
         else:
             raise BadRequest("Unsupported platform")
-        return response
+        return redirect(url_for("notifications.index"))
 
 
 class NotificationsDelete(MethodView):
@@ -44,7 +50,8 @@ class NotificationsDelete(MethodView):
     @token_required
     def post(self):
         if self.platform == "twitch":
-            response = TwitchEventDelete(request).execute()
+            UserUpdateDelete(request).execute()
+            StreamOnlineDelete(request).execute()
         else:
             raise BadRequest("Unsupported platform")
-        return response
+        return redirect(url_for("notifications.index"))

@@ -34,7 +34,7 @@ def send_socket_message(event, data=None) -> dict:
 
 
 def twitch_api_request(method, path, status_code=200, **kwargs) -> dict:
-    if not app.twitch_token or datetime.now() >= app.twitch_token_expires:
+    if not hasattr(app, "twitch_token") or datetime.now() >= app.twitch_token_expires:
         get_twitch_token()
     url = "https://api.twitch.tv/helix"+path
     headers = {

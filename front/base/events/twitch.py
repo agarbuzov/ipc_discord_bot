@@ -1,15 +1,12 @@
 import settings
 
+from uuid import UUID
 from requests import Response
 
-from flask import session
 from flask import url_for
-from flask import redirect
-
-from sqlalchemy import and_
 
 from models import session as db_session
-from models import Notification
+from models import Broadcaster
 
 from typing import Union
 from typing import Tuple
@@ -20,7 +17,6 @@ from front.base.utils import twitch_api_request
 
 from werkzeug import Response
 from werkzeug import Request
-from werkzeug.exceptions import NotFound
 from werkzeug.exceptions import BadRequest
 
 
@@ -64,46 +60,27 @@ class TwitchEvent:
         pass
 
 
-class TwitchEventCreate:
+class TwitchSubscribeCreate:
 
-    def __init__(self, request) -> None:
-        self._platform: str = "twitch"
-        self._guild: int = request.form.get("guild")
-        self._channel: int = request.form.get("channel")
-        self._broadcaster: str = request.form.get("broadcaster")
-        self._message: str = request.form.get("message")
-        self._creator_id: Optional[int] = session.user.id
+    def __init__(self, event_type, version="1") -> None:
+        self._type: str = event_type
+        self._version: str = version
+        self._condition: Optional[dict] = None
         self._data: Optional[dict] = None
         self._response: Optional[dict] = None
-        self._broadcaster_id: Optional[int] = None
 
-    def execute(self) -> Response:
-        self._get_broadcaster_id()
-        self._build_request()
+    def execute(self):
+        self._build_request_data()
         self._execute_request()
-        self._save_record()
-        return redirect(url_for("notifications.index"))
 
-    def _get_broadcaster_id(self) -> None:
-        data = {"login": self._broadcaster}
-        response = twitch_api_request(
-            "get", "/users/", params=data
-        )
-        broadcaster_id = response.get("data", [{}])[0].get("id")
-        if not broadcaster_id:
-            raise NotFound("Twitch user with such nickname not found")
-        self._broadcaster_id = broadcaster_id
-
-    def _build_request(self) -> None:
+    def _build_request_data(self) -> None:
         self._data = {
-            "type": "stream.online",
-            "version": "1",
-            "condition": {
-                "broadcaster_user_id": self._broadcaster_id
-            },
+            "type": self._type,
+            "version": self._version,
+            "condition": self._condition,
             "transport": {
                 "method": "webhook",
-                "callback": url_for("base.event_handler", platform="twitch", _external=True),
+                "callback": url_for("event_handler", platform="twitch", _external=True),
                 "secret": settings.SECRET_KEY
             }
         }
@@ -113,52 +90,39 @@ class TwitchEventCreate:
             "post", "/eventsub/subscriptions", 202, json=self._data
         )
 
-    def _save_record(self) -> None:
-        notification_id = self._response.get("data", [{}])[0].get("id")
-        if not notification_id:
-            raise BadRequest("ID is missing on request body")
-        notification = Notification(
-            identifier=notification_id,
-            platform=self._platform,
-            guild_id=self._guild,
-            channel_id=self._channel,
-            broadcaster_id=self._broadcaster_id,
-            body=self._message,
-            creator_id=self._creator_id
+
+class TwitchSubscribeDelete:
+
+    def __init__(self, event_id) -> None:
+        self._event_id: UUID = event_id
+
+    def execute(self):
+        self._execute_reqeuest()
+
+    def _execute_reqeuest(self):
+        self._response = twitch_api_request(
+            "delete", "/eventsub/subscriptions", 204, params={"id": self._event_id}
         )
-        db_session.add(notification)
-        db_session.commit()
 
 
-class TwitchEventDelete:
+class UserUpdate(TwitchEvent):
 
     def __init__(self, request) -> None:
-        self._id: int = request.form.get("id")
-        self._data: Optional[dict] = None
-        self._creator_id: Optional[int] = session.user.id
+        super().__init__(request)
 
-    def execute(self) -> Response:
-        self._check_user()
-        self._build_request()
-        self._execute_request()
-        return redirect(url_for("notifications.index"))
-
-    def _build_request(self) -> None:
-        self._data = {
-            "id": self._id
-        }
-
-    def _check_user(self) -> None:
-        record = db_session.query(Notification).filter(
-            and_(Notification.identifier == self._id, Notification.creator_id == self._creator_id)
-        ).delete()
-
-        if not record:
-            raise NotFound
-
+    def _handle_notification(self) -> None:
+        broadcaster_data = self._request.json.get("event", {})
+        broadcaster = db_session.query(Broadcaster).get(broadcaster_data.get("user_id"))
+        broadcaster.login = broadcaster_data.get("user_login")
+        broadcaster.name = broadcaster_data.get("user_name")
+        db_session.add(broadcaster)
         db_session.commit()
+        self._result = ("", 204)
 
-    def _execute_request(self) -> None:
-        self._response = twitch_api_request(
-            "delete", "/eventsub/subscriptions", 204, params=self._data
-        )
+    def _handle_revocation(self) -> None:
+        identifier = self._request.json.get("subscription", {}).get("id")
+        broadcaster = db_session.query(Broadcaster).filter_by(identifier=identifier)
+        broadcaster.identifier = None
+        db_session.add(broadcaster)
+        db_session.commit()
+        self._result = ("", 204)

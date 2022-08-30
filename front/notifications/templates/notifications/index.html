@@ -64,11 +64,10 @@
                             </thead>
                             <tbody>
                             {% for notification in notifications %}
-                                {% set login = notification.broadcaster_login %}
                                 <tr class="align-middle">
                                     <th scope="row">{{ notification.id }}</th>
                                     <td>{{ notification.platform }}</td>
-                                    <td><a href="https://twitch.tv/{{ notification.broadcaster_login }}" target="_blank">{{ login }}</a></td>
+                                    <td><a href="https://twitch.tv/{{ notification.broadcaster.login }}" target="_blank">{{ notification.broadcaster.login }}</a></td>
                                     <td><a href="https://discord.com/channels/{{ notification.guild_id }}" target="_blank">{{ notification.guild_id }}</a></td>
                                     <td><a href="https://discord.com/channels/{{ notification.guild_id }}/{{ notification.channel_id }}" target="_blank">{{ notification.channel_id }}</a></td>
                                     <td>
