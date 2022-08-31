@@ -50,7 +50,7 @@ class NotificationsDelete(MethodView):
     @token_required
     def post(self):
         if self.platform == "twitch":
-            UserUpdateDelete(request).execute()
+            # UserUpdateDelete(request).execute()
             StreamOnlineDelete(request).execute()
         else:
             raise BadRequest("Unsupported platform")

@@ -60,7 +60,7 @@ class TwitchEvent:
         pass
 
 
-class TwitchSubscribeCreate:
+class TwitchSubscriptionCreate:
 
     def __init__(self, event_type, version="1") -> None:
         self._type: str = event_type
@@ -91,7 +91,7 @@ class TwitchSubscribeCreate:
         )
 
 
-class TwitchSubscribeDelete:
+class TwitchSubscriptionDelete:
 
     def __init__(self, event_id) -> None:
         self._event_id: UUID = event_id

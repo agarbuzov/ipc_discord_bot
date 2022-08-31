@@ -2,6 +2,8 @@ from typing import Optional
 
 from flask import session
 
+from sqlalchemy.orm.query import Query
+
 from models import session as db_session
 from models import Notification
 from models import Broadcaster
@@ -9,8 +11,8 @@ from models import Broadcaster
 from front.base.utils import twitch_api_request
 from front.base.utils import send_socket_message
 from front.base.events.twitch import TwitchEvent
-from front.base.events.twitch import TwitchSubscribeDelete
-from front.base.events.twitch import TwitchSubscribeCreate
+from front.base.events.twitch import TwitchSubscriptionDelete
+from front.base.events.twitch import TwitchSubscriptionCreate
 
 from werkzeug.exceptions import NotFound
 
@@ -27,18 +29,19 @@ class StreamOnline(TwitchEvent):
 
     def _handle_revocation(self) -> None:
         identifier = self._request.json.get("subscription", {}).get("id")
-        notification = db_session.query(Notification).filter_by(identifier=identifier)
-        broadcaster = notification.broadcaster
+        notifications = db_session.query(Notification).filter_by(identifier=identifier)
+        broadcaster = notifications.first().broadcaster
         self._response = twitch_api_request(
             "delete", "/eventsub/subscriptions", 204, params={"id": broadcaster.identifier}
         )
         broadcaster.identifier = None
-        db_session.delete(notification, broadcaster)
+        db_session.add(broadcaster)
+        db_session.delete(notifications.all())
         db_session.commit()
         self._result = ("", 204)
 
 
-class StreamOnlineCreate(TwitchSubscribeCreate):
+class StreamOnlineCreate(TwitchSubscriptionCreate):
 
     def __init__(self, request) -> None:
         super().__init__("stream.online")
@@ -48,18 +51,27 @@ class StreamOnlineCreate(TwitchSubscribeCreate):
         self._message: str = request.form.get("message")
         self._creator_id: Optional[int] = session.user.id
         self._broadcaster: Optional[Broadcaster] = None
+        self._subscription: Optional[Notification] = None
 
     def execute(self):
         self._get_broadcaster()
-        self._condition = {"broadcaster_user_id": str(self._broadcaster.id)}
-        super().execute()
+        self._get_subscriptions()
+        if not self._subscription:
+            self._condition = {"broadcaster_user_id": str(self._broadcaster.id)}
+            super().execute()
         self._save_notification()
+
+    def _get_subscriptions(self):
+        self._subscription = db_session.query(Notification).filter_by(broadcaster=self._broadcaster).first()
 
     def _get_broadcaster(self):
         self._broadcaster = db_session.query(Broadcaster).filter_by(login=self._login.lower()).first()
 
     def _save_notification(self) -> None:
-        notification_id = self._response.get("data", [{}])[0].get("id")
+        if not self._subscription:
+            notification_id = self._response.get("data", [{}])[0].get("id")
+        else:
+            notification_id = self._subscription.identifier
         notification = Notification(
             identifier=notification_id,
             platform="twitch",
@@ -73,11 +85,29 @@ class StreamOnlineCreate(TwitchSubscribeCreate):
         db_session.commit()
 
 
-class StreamOnlineDelete(TwitchSubscribeDelete):
-    pass
+class StreamOnlineDelete(TwitchSubscriptionDelete):
+
+    def __init__(self, request) -> None:
+        super().__init__(request.form.get("id"))
+        self._subscriptions: Optional[Query] = None
+        self._subscription: Optional[Notification] = None
+
+    def execute(self):
+        self._get_subscriptions()
+        if self._subscription and len(self._subscriptions.all()) == 1:
+            super().execute()
+        self._delete_record()
+
+    def _get_subscriptions(self):
+        self._subscriptions = db_session.query(Notification).filter_by(identifier=self._event_id)
+        self._subscription = self._subscriptions.filter_by(creator_id=session.user.id).first()
+
+    def _delete_record(self):
+        db_session.delete(self._subscription)
+        db_session.commit()
 
 
-class UserUpdateCreate(TwitchSubscribeCreate):
+class UserUpdateCreate(TwitchSubscriptionCreate):
 
     def __init__(self, request):
         super().__init__("user.update")
@@ -125,5 +155,5 @@ class UserUpdateCreate(TwitchSubscribeCreate):
         db_session.commit()
 
 
-class UserUpdateDelete(TwitchSubscribeDelete):
+class UserUpdateDelete(TwitchSubscriptionDelete):
     pass
