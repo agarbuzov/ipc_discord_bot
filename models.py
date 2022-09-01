@@ -20,8 +20,6 @@ from sqlalchemy.sql import func
 
 from sqlalchemy.ext.declarative import declarative_base
 
-from front.base.utils import twitch_api_request
-
 engine = create_engine("sqlite:///discord.db", connect_args={"check_same_thread": False},
                        poolclass=StaticPool, echo=False)
 Base = declarative_base()
