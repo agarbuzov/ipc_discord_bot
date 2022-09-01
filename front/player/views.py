@@ -25,6 +25,10 @@ class PlayerSearch(MethodView):
         return render_template("player/search.html", result=result)
 
 
+class PlayerHistory(MethodView):
+    pass
+
+
 class PlayerPlaylists(MethodView):
 
     @staticmethod

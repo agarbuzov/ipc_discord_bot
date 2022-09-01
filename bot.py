@@ -8,8 +8,8 @@ import settings
 
 from discord.ext.commands import Bot
 from discord_bot.websocket import WebSocket
-from discord_bot.notification import Notifications
 from discord_bot.music import Music
+from discord_bot.alerts import Alerts
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -43,10 +43,10 @@ async def check(ctx):
 
 
 @websocket.add_event
-async def send_notification(data):
+async def send_alert(data):
     broadcaster_id = data.get("broadcaster_id")
-    notification = bot.get_cog("Notifications")
-    await notification.send(broadcaster_id)
+    alert = bot.get_cog("Alerts")
+    await alert.send(broadcaster_id)
     return json.dumps({"message": "success"})
 
 
@@ -63,7 +63,7 @@ async def main():
     await websocket.serve()
     async with bot:
         await bot.add_cog(Music(bot))
-        await bot.add_cog(Notifications(bot))
+        await bot.add_cog(Alerts(bot))
         await bot.start(settings.BOT_TOKEN)
 
 if __name__ == "__main__":

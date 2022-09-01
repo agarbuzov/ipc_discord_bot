@@ -5,8 +5,8 @@
         <div class="row g-4">
             <div class="col-12">
                 <div class="h-100 bg-secondary rounded p-4">
-                    <h6 class="mb-4">Notification create</h6>
-                    <form autocomplete="off" method="post" action="{{ url_for("notifications.create") }}">
+                    <h6 class="mb-4">Alert create</h6>
+                    <form autocomplete="off" method="post" action="{{ url_for("alerts.create") }}">
                         <div class="row mb-3">
                             <label for="platform" class="col-sm-3 col-form-label">Platform</label>
                             <div class="col-sm-9">
@@ -43,13 +43,13 @@
                             </div>
                         </div>
                         <input type="submit" class="btn btn-success" value="Save">
-                        <a class="btn btn-primary" href="{{ url_for("notifications.index") }}">Cancel</a>
+                        <a class="btn btn-primary" href="{{ url_for("alerts.index") }}">Cancel</a>
                     </form>
                 </div>
             </div>
             <div class="col-12">
                 <div class="bg-secondary rounded h-100 p-4">
-                    <h6 class="mb-4">Notifications</h6>
+                    <h6 class="mb-4">Alerts</h6>
                     <div class="table-responsive">
                         <table class="table table-striped">
                             <thead>
@@ -63,17 +63,17 @@
                             </tr>
                             </thead>
                             <tbody>
-                            {% for notification in notifications %}
+                            {% for alert in alerts %}
                                 <tr class="align-middle">
-                                    <th scope="row">{{ notification.id }}</th>
-                                    <td>{{ notification.platform }}</td>
-                                    <td><a href="https://twitch.tv/{{ notification.broadcaster.login }}" target="_blank">{{ notification.broadcaster.login }}</a></td>
-                                    <td><a href="https://discord.com/channels/{{ notification.guild_id }}" target="_blank">{{ notification.guild_id }}</a></td>
-                                    <td><a href="https://discord.com/channels/{{ notification.guild_id }}/{{ notification.channel_id }}" target="_blank">{{ notification.channel_id }}</a></td>
+                                    <th scope="row">{{ alert.id }}</th>
+                                    <td>{{ alert.platform }}</td>
+                                    <td><a href="https://twitch.tv/{{ alert.broadcaster.login }}" target="_blank">{{ alert.broadcaster.login }}</a></td>
+                                    <td><a href="https://discord.com/channels/{{ alert.guild_id }}" target="_blank">{{ alert.guild_id }}</a></td>
+                                    <td><a href="https://discord.com/channels/{{ alert.guild_id }}/{{ alert.channel_id }}" target="_blank">{{ alert.channel_id }}</a></td>
                                     <td>
-                                        <form method="post" action="{{ url_for("notifications.delete") }}">
-                                            <input type="hidden" name="id" value="{{ notification.identifier }}">
-                                            <input type="hidden" name="platform" value="{{ notification.platform }}">
+                                        <form method="post" action="{{ url_for("alerts.delete") }}">
+                                            <input type="hidden" name="id" value="{{ alert.identifier }}">
+                                            <input type="hidden" name="platform" value="{{ alert.platform }}">
                                             <input type="submit" class="btn btn-sm btn-primary" value="Remove">
                                         </form>
                                     </td>
@@ -81,9 +81,9 @@
                             {% endfor %}
                             </tbody>
                         </table>
-                        {% if not notifications %}
+                        {% if not alerts %}
                                 <div class="text-center">
-                                    <div>You don't have notifications</div>
+                                    <div>You don't have alerts</div>
                                 </div>
                         {% endif %}
                     </div>

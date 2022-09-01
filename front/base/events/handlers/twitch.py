@@ -1,13 +1,13 @@
 import hmac
 import hashlib
+import settings
 
 from typing import Type
 from typing import Optional
 
-import settings
 from front.base.events.twitch import TwitchEvent
 from front.base.events.twitch import UserUpdate
-from front.notifications.events.twitch import StreamOnline
+from front.alerts.events.twitch import StreamOnline
 
 from werkzeug.exceptions import Forbidden
 from werkzeug.exceptions import BadRequest

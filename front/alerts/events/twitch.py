@@ -5,7 +5,7 @@ from flask import session
 from sqlalchemy.orm.query import Query
 
 from models import session as db_session
-from models import Notification
+from models import Alert
 from models import Broadcaster
 
 from front.base.utils import twitch_api_request
@@ -24,19 +24,19 @@ class StreamOnline(TwitchEvent):
 
     def _handle_notification(self) -> None:
         broadcaster_id = self._request.json.get("event", {}).get("broadcaster_user_id")
-        send_socket_message("send_notification", {"broadcaster_id": broadcaster_id})
+        send_socket_message("send_alert", {"broadcaster_id": broadcaster_id})
         self._result = ("", 204)
 
     def _handle_revocation(self) -> None:
         identifier = self._request.json.get("subscription", {}).get("id")
-        notifications = db_session.query(Notification).filter_by(identifier=identifier)
-        broadcaster = notifications.first().broadcaster
+        alerts = db_session.query(Alert).filter_by(identifier=identifier)
+        broadcaster = alerts.first().broadcaster
         self._response = twitch_api_request(
             "delete", "/eventsub/subscriptions", 204, params={"id": broadcaster.identifier}
         )
         broadcaster.identifier = None
         db_session.add(broadcaster)
-        db_session.delete(notifications.all())
+        db_session.delete(alerts.all())
         db_session.commit()
         self._result = ("", 204)
 
@@ -51,7 +51,7 @@ class StreamOnlineCreate(TwitchSubscriptionCreate):
         self._message: str = request.form.get("message")
         self._creator_id: Optional[int] = session.user.id
         self._broadcaster: Optional[Broadcaster] = None
-        self._subscription: Optional[Notification] = None
+        self._subscription: Optional[Alert] = None
 
     def execute(self):
         self._get_broadcaster()
@@ -59,21 +59,21 @@ class StreamOnlineCreate(TwitchSubscriptionCreate):
         if not self._subscription:
             self._condition = {"broadcaster_user_id": str(self._broadcaster.id)}
             super().execute()
-        self._save_notification()
+        self._save_subscription()
 
     def _get_subscriptions(self):
-        self._subscription = db_session.query(Notification).filter_by(broadcaster=self._broadcaster).first()
+        self._subscription = db_session.query(Alert).filter_by(broadcaster=self._broadcaster).first()
 
     def _get_broadcaster(self):
         self._broadcaster = db_session.query(Broadcaster).filter_by(login=self._login.lower()).first()
 
-    def _save_notification(self) -> None:
+    def _save_subscription(self) -> None:
         if not self._subscription:
-            notification_id = self._response.get("data", [{}])[0].get("id")
+            subscription_id = self._response.get("data", [{}])[0].get("id")
         else:
-            notification_id = self._subscription.identifier
-        notification = Notification(
-            identifier=notification_id,
+            subscription_id = self._subscription.identifier
+        alert = Alert(
+            identifier=subscription_id,
             platform="twitch",
             guild_id=self._guild,
             channel_id=self._channel,
@@ -81,7 +81,7 @@ class StreamOnlineCreate(TwitchSubscriptionCreate):
             body=self._message,
             creator_id=self._creator_id
         )
-        db_session.add(notification)
+        db_session.add(alert)
         db_session.commit()
 
 
@@ -90,7 +90,7 @@ class StreamOnlineDelete(TwitchSubscriptionDelete):
     def __init__(self, request) -> None:
         super().__init__(request.form.get("id"))
         self._subscriptions: Optional[Query] = None
-        self._subscription: Optional[Notification] = None
+        self._subscription: Optional[Alert] = None
 
     def execute(self):
         self._get_subscriptions()
@@ -99,7 +99,7 @@ class StreamOnlineDelete(TwitchSubscriptionDelete):
         self._delete_record()
 
     def _get_subscriptions(self):
-        self._subscriptions = db_session.query(Notification).filter_by(identifier=self._event_id)
+        self._subscriptions = db_session.query(Alert).filter_by(identifier=self._event_id)
         self._subscription = self._subscriptions.filter_by(creator_id=session.user.id).first()
 
     def _delete_record(self):

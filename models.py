@@ -103,8 +103,8 @@ class History(Base):
     user = relationship("User")
 
 
-class Notification(Base):
-    __tablename__ = "notification"
+class Alert(Base):
+    __tablename__ = "alert"
     id = Column(Integer, primary_key=True)
     identifier = Column(String)
     platform = Column(String)

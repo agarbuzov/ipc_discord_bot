@@ -6,28 +6,28 @@ from flask import render_template
 from flask.views import MethodView
 
 from models import session as db_session
-from models import Notification
+from models import Alert
 
 from front.base.decorators import token_required
 
-from front.notifications.events.twitch import UserUpdateCreate
-from front.notifications.events.twitch import UserUpdateDelete
-from front.notifications.events.twitch import StreamOnlineCreate
-from front.notifications.events.twitch import StreamOnlineDelete
+from front.alerts.events.twitch import UserUpdateCreate
+from front.alerts.events.twitch import UserUpdateDelete
+from front.alerts.events.twitch import StreamOnlineCreate
+from front.alerts.events.twitch import StreamOnlineDelete
 
 from werkzeug.exceptions import BadRequest
 
 
-class NotificationsIndex(MethodView):
+class AlertsIndex(MethodView):
 
     @staticmethod
     @token_required
     def get():
-        notifications = db_session.query(Notification).filter_by(creator_id=session.user.id).all()
-        return render_template("notifications/index.html", notifications=notifications)
+        alerts = db_session.query(Alert).filter_by(creator_id=session.user.id).all()
+        return render_template("alerts/index.html", alerts=alerts)
 
 
-class NotificationsCreate(MethodView):
+class AlertsCreate(MethodView):
 
     def __init__(self) -> None:
         self.platform = request.form.get("platform")
@@ -39,10 +39,10 @@ class NotificationsCreate(MethodView):
             StreamOnlineCreate(request).execute()
         else:
             raise BadRequest("Unsupported platform")
-        return redirect(url_for("notifications.index"))
+        return redirect(url_for("alerts.index"))
 
 
-class NotificationsDelete(MethodView):
+class AlertsDelete(MethodView):
 
     def __init__(self) -> None:
         self.platform = request.form.get("platform")
@@ -54,4 +54,4 @@ class NotificationsDelete(MethodView):
             StreamOnlineDelete(request).execute()
         else:
             raise BadRequest("Unsupported platform")
-        return redirect(url_for("notifications.index"))
+        return redirect(url_for("alerts.index"))

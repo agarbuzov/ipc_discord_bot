@@ -1,6 +1,6 @@
 from typing import Optional
 from models import session
-from models import Notification
+from models import Alert
 
 from discord import Embed
 from discord import Color
@@ -10,7 +10,7 @@ from discord.ext.commands import Cog
 from front.base.utils import twitch_api_request
 
 
-class Notifications(Cog):
+class Alerts(Cog):
 
     def __init__(self, bot):
         self.bot: Optional[Bot] = bot
@@ -52,7 +52,7 @@ class Notifications(Cog):
         await self.get_user_data(broadcaster_id)
         await self.get_category_data()
         await self.create_embed()
-        targets = session.query(Notification).filter(Notification.broadcaster_id == broadcaster_id).all()
+        targets = session.query(Alert).filter_by(broadcaster_id=broadcaster_id).all()
         for target in targets:
             guild = self.bot.get_guild(target.guild_id)
             channel = guild.get_channel(target.channel_id)
