@@ -31,9 +31,7 @@ class StreamOnline(TwitchEvent):
         identifier = self._request.json.get("subscription", {}).get("id")
         alerts = db_session.query(Alert).filter_by(identifier=identifier)
         broadcaster = alerts.first().broadcaster
-        self._response = twitch_api_request(
-            "delete", "/eventsub/subscriptions", 204, params={"id": broadcaster.identifier}
-        )
+        twitch_api_request("delete", "/eventsub/subscriptions", 204, params={"id": broadcaster.identifier})
         broadcaster.identifier = None
         db_session.add(broadcaster)
         db_session.delete(alerts.all())
@@ -131,21 +129,20 @@ class UserUpdateCreate(TwitchSubscriptionCreate):
 
     def _request_broadcaster(self) -> None:
         data = {"login": self._login}
-        response = twitch_api_request(
-            "get", "/users/", params=data
-        )
+        response = twitch_api_request("get", "/users/", params=data)
         broadcaster = response.get("data", [{}])[0]
+
         if not broadcaster:
             raise NotFound("Twitch user with such nickname not found")
-        self._broadcaster = broadcaster
+
+        self._broadcaster = Broadcaster(
+            id=broadcaster.get("id"),
+            login=broadcaster.get("login"),
+            name=broadcaster.get("name")
+        )
 
     def _save_broadcaster(self) -> None:
-        broadcaster = Broadcaster(
-            id=self._broadcaster.get("id"),
-            login=self._broadcaster.get("login"),
-            name=self._broadcaster.get("name")
-        )
-        db_session.add(broadcaster)
+        db_session.add(self._broadcaster)
         db_session.commit()
 
     def _set_identifier(self):
