@@ -2,11 +2,9 @@ import json
 import requests
 import settings
 
-from flask import current_app as app
+from models import Token
 
 from contextlib import closing
-from datetime import datetime
-from datetime import timedelta
 from websocket import create_connection
 
 from werkzeug.exceptions import BadRequest
@@ -34,12 +32,11 @@ def send_socket_message(event, data=None) -> dict:
 
 
 def twitch_api_request(method, path, status_code=200, **kwargs) -> dict:
-    if not hasattr(app, "twitch_token") or datetime.now() >= app.twitch_token_expires:
-        get_twitch_token()
+    token = Token.get_twitch()
     url = "https://api.twitch.tv/helix"+path
     headers = {
         "Client-ID": settings.TWITCH_CLIENT_ID,
-        "Authorization": app.twitch_token
+        "Authorization": f"{token.token_type} {token.token}"
     }
     response = requests.request(method, url, headers=headers, **kwargs)
     content_type = response.headers.get("Content-Type", "")
@@ -51,18 +48,3 @@ def twitch_api_request(method, path, status_code=200, **kwargs) -> dict:
         error = data.get("message")
         raise BadRequest(f"Twitch request error: {error}")
     return data
-
-
-def get_twitch_token():
-    url = "https://id.twitch.tv/oauth2/token"
-    data = {
-        "client_id": settings.TWITCH_CLIENT_ID,
-        "client_secret": settings.TWITCH_CLIENT_SECRET,
-        "grant_type": "client_credentials"
-    }
-    response = requests.post(url, data=data)
-    auth_data = response.json()
-    twitch_token = f"{auth_data.get('token_type').capitalize()} {auth_data.get('access_token')}"
-    twitch_token_expires = datetime.now() + timedelta(seconds=auth_data.get("expires_in"))
-    app.twitch_token = twitch_token
-    app.twitch_token_expires = twitch_token_expires

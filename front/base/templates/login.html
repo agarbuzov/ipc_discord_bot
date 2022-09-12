@@ -8,13 +8,13 @@
                 <div class="bg-secondary rounded p-4 p-sm-5 my-4 mx-3">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <a href="{{ url_for("index") }}" class="">
-                            <h3 class="text-primary"><i class="fas fa-robot me-2"></i>{{ session.bot.get("name") }}</h3>
+                            <h3 class="text-primary"><i class="fas fa-robot me-2"></i>{{ session.get("bot", {}).get("name") }}</h3>
                         </a>
                         <h3>Sign In</h3>
                     </div>
                     <div class="d-flex align-items-center justify-content-center mb-4">
-                        <img src="{{ session.bot.get("avatar") }}"
-                             class="rounded-circle w-50 h-50">
+                        <img src="{{ session.get("bot", {}).get("avatar") }}"
+                             class="rounded-circle w-50 h-50" alt="Bot avatar">
                     </div>
                     <a class="btn btn-primary py-3 w-100 mb-4" href="https://discord.com/api/oauth2/authorize?client_id={{ client_id }}&redirect_uri={{ url_for("auth", _external=True) }}&response_type=code&scope=identify%20guilds">
                         <svg width="30px" height="30px" viewBox="0 -28.5 256 256" version="1.1"

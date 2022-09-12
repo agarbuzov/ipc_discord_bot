@@ -22,5 +22,6 @@ def user_middleware():
 
 
 def bot_middleware():
-    bot_info = send_socket_message("bot_info")
-    session.bot = bot_info
+    if not session.get("bot"):
+        bot_info = send_socket_message("bot_info")
+        session["bot"] = bot_info

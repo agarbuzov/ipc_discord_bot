@@ -24,7 +24,9 @@ class StreamOnline(TwitchEvent):
 
     def _handle_notification(self) -> None:
         broadcaster_id = self._request.json.get("event", {}).get("broadcaster_user_id")
-        send_socket_message("send_alert", {"broadcaster_id": broadcaster_id})
+        subscription_id = self._request.json.get("subscription", {}).get("id")
+        if db_session.query(Alert).filter_by(identifier=subscription_id).first():
+            send_socket_message("send_alert", {"broadcaster_id": broadcaster_id})
         self._result = ("", 204)
 
     def _handle_revocation(self) -> None:

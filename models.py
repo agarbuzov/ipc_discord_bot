@@ -1,4 +1,10 @@
+import settings
+import requests
+
 from flask import url_for
+
+from datetime import datetime
+from datetime import timedelta
 
 from sqlalchemy import Text
 from sqlalchemy import Column
@@ -126,3 +132,40 @@ class Broadcaster(Base):
     login = Column(String)
     name = Column(String)
     identifier = Column(String)
+
+
+class Token(Base):
+    __tablename__ = "token"
+    id = Column(Integer, primary_key=True)
+    token_type = Column(String)
+    token = Column(String)
+    expires = Column(DateTime)
+    platform = Column(String)
+
+    @classmethod
+    def get_twitch(cls):
+        token = session.query(Token).filter_by(platform="twitch").first()
+        if not token:
+            token = Token(platform="twitch")
+            token.token_type, token.token, token.expires = cls._get_twitch_token()
+            session.add(token)
+            session.commit()
+        if datetime.now() >= token.expires:
+            token.token_type, token.token, token.expires = cls._get_twitch_token()
+            session.commit()
+        return token
+
+    @classmethod
+    def _get_twitch_token(cls):
+        url = "https://id.twitch.tv/oauth2/token"
+        data = {
+            "client_id": settings.TWITCH_CLIENT_ID,
+            "client_secret": settings.TWITCH_CLIENT_SECRET,
+            "grant_type": "client_credentials"
+        }
+        response = requests.post(url, data=data)
+        auth_data = response.json()
+        token_type = auth_data.get("token_type").capitalize()
+        token = auth_data.get("access_token")
+        expires = datetime.now() + timedelta(seconds=auth_data.get("expires_in"))
+        return token_type, token, expires
