@@ -121,6 +121,7 @@ class Alert(Base):
     body = Column(String)
     creator_id = Column(BigInteger, ForeignKey('user.id'))
     creator = relationship("User")
+    last_message_id = Column(String)
     __table_args__ = (
         UniqueConstraint("broadcaster_id", "guild_id", "channel_id"),
     )

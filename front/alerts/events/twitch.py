@@ -23,10 +23,13 @@ class StreamOnline(TwitchEvent):
         super().__init__(request)
 
     def _handle_notification(self) -> None:
+        message_id = self._request.headers.get("Twitch-Eventsub-Message-Id")
         broadcaster_id = self._request.json.get("event", {}).get("broadcaster_user_id")
-        subscription_id = self._request.json.get("subscription", {}).get("id")
-        if db_session.query(Alert).filter_by(identifier=subscription_id).first():
-            send_socket_message("send_alert", {"broadcaster_id": broadcaster_id})
+        if alert := db_session.query(Alert).filter_by(broadcaster_id=broadcaster_id).first():
+            if alert.last_message_id != message_id:
+                alert.last_message_id = message_id
+                db_session.commit()
+                send_socket_message("send_alert", {"broadcaster_id": broadcaster_id})
         self._result = ("", 204)
 
     def _handle_revocation(self) -> None:
