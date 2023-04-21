@@ -13,6 +13,9 @@ DISCORD_SECRET = None
 TROVO_CLIENT_ID = None
 TROVO_SECRET = None
 
+# Imgur credentials
+IMGUR_CLIENT_ID = None
+
 # Flask settings
 SECRET_KEY = None
 
